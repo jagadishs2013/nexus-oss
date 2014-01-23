@@ -117,6 +117,7 @@ public class WebappBootstrap
           .setContainerConfigurationURL(plexusXml)
           .setContext((Map) properties)
           .setAutoWiring(true)
+          .setJSR250Lifecycle(true)
           .setClassPathScanning(PlexusConstants.SCANNING_INDEX)
           .setComponentVisibility(PlexusConstants.GLOBAL_VISIBILITY);
 
