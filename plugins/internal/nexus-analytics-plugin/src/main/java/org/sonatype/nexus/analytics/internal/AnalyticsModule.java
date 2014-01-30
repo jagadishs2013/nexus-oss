@@ -12,17 +12,24 @@
  */
 package org.sonatype.nexus.analytics.internal;
 
+import java.io.File;
+
 import io.kazuki.v0.store.easy.EasyPartitionedJournalStoreModule;
 import io.kazuki.v0.store.jdbi.JdbiDataSourceConfiguration;
 import io.kazuki.v0.store.keyvalue.KeyValueStoreConfiguration;
 import io.kazuki.v0.store.lifecycle.LifecycleModule;
 import io.kazuki.v0.store.sequence.SequenceServiceConfiguration;
 
+import javax.inject.Inject;
 import javax.inject.Named;
 
+import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
 import org.sonatype.nexus.web.internal.SecurityFilter;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provider;
+import com.google.inject.Scopes;
+import com.google.inject.name.Names;
 import com.google.inject.servlet.ServletModule;
 
 /**
@@ -36,9 +43,10 @@ public class AnalyticsModule extends AbstractModule {
   protected void configure() {
     install(new LifecycleModule("nexusanalytics"));
 
-    EasyPartitionedJournalStoreModule journalModule = new EasyPartitionedJournalStoreModule("nexusanalytics", null);
+    bind(JdbiDataSourceConfiguration.class).annotatedWith(Names.named("nexusanalytics"))
+        .toProvider(JdbiConfigurationProvider.class).in(Scopes.SINGLETON);
 
-    journalModule.withJdbiConfig(getJdbiDataSourceConfiguration());
+    EasyPartitionedJournalStoreModule journalModule = new EasyPartitionedJournalStoreModule("nexusanalytics", null);
     journalModule.withSequenceConfig(getSequenceServiceConfiguration());
     journalModule.withKeyValueStoreConfig(getKeyValueStoreConfiguration());
 
@@ -58,19 +66,6 @@ public class AnalyticsModule extends AbstractModule {
         filter("/internal/*").through(RestRequestCollector.class);
       }
     });
-  }
-
-  private JdbiDataSourceConfiguration getJdbiDataSourceConfiguration() {
-    JdbiDataSourceConfiguration.Builder builder = new JdbiDataSourceConfiguration.Builder();
-
-    builder.withJdbcDriver("org.h2.Driver");
-    builder.withJdbcUrl("jdbc:h2:mem:thedb;DB_CLOSE_ON_EXIT=FALSE");
-    builder.withJdbcUser("root");
-    builder.withJdbcPassword("not_really_used");
-    builder.withPoolMinConnections(25);
-    builder.withPoolMaxConnections(25);
-
-    return builder.build();
   }
 
   private SequenceServiceConfiguration getSequenceServiceConfiguration() {
@@ -93,7 +88,34 @@ public class AnalyticsModule extends AbstractModule {
     builder.withPartitionName("default");
     builder.withPartitionSize(1_000_000L);
     builder.withStrictTypeCreation(true);
+    builder.withDataType("event_data");
 
     return builder.build();
+  }
+
+  private static class JdbiConfigurationProvider implements Provider<JdbiDataSourceConfiguration> {
+    private final ApplicationConfiguration config;
+
+    @Inject
+    public JdbiConfigurationProvider(ApplicationConfiguration config) {
+      this.config = config;
+    }
+
+    @Override
+    public JdbiDataSourceConfiguration get() {
+      JdbiDataSourceConfiguration.Builder builder = new JdbiDataSourceConfiguration.Builder();
+
+      builder.withJdbcDriver("org.h2.Driver");
+
+      builder.withJdbcUrl("jdbc:h2:" + config.getWorkingDirectory("nexus-analytics-plugin-db") + File.separator
+          + "analytics");
+
+      builder.withJdbcUser("root");
+      builder.withJdbcPassword("not_really_used");
+      builder.withPoolMinConnections(25);
+      builder.withPoolMaxConnections(25);
+
+      return builder.build();
+    }
   }
 }

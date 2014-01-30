@@ -93,13 +93,13 @@ public class EventStoreImpl
 
   @Override
   public void clear() throws Exception {
-    store.clear(true, true);
+    store.clear();
     log.debug("Cleared");
   }
 
   @Override
   public long approximateSize() throws Exception {
-    return store.approximateSize("event_data");
+    return store.approximateSize();
   }
 
   @Override
