@@ -106,6 +106,30 @@
       </dependency>
 
       <dependency>
+        <groupId>io.kazuki</groupId>
+        <artifactId>kazuki-db</artifactId>
+        <version>0.0.10</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jdbi</groupId>
+        <artifactId>jdbi</artifactId>
+        <version>2.51</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.jolbox</groupId>
+        <artifactId>bonecp</artifactId>
+        <version>0.8.0.RELEASE</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.antlr</groupId>
+        <artifactId>stringtemplate</artifactId>
+        <version>3.0</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.apache.tika</groupId>
         <artifactId>tika-core</artifactId>
         <version>1.4</version>
