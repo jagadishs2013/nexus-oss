@@ -107,7 +107,7 @@ public class EventStoreImpl
     return store.getIteratorRelative("event_data", EventData.class, index, null);
   }
   
-  private void exportAllData(PrintWriter writer, ObjectMapper mapper) throws Exception {
+  private void exportAllData(PrintWriter writer, ObjectMapper mapper, boolean dropPartitions) throws Exception {
     try {
       if (!exportLock.tryLock()) {
         throw new IllegalStateException("Already locked for export");
@@ -131,7 +131,9 @@ public class EventStoreImpl
 
         writer.flush();
 
-        store.dropPartition(partition.getPartitionId());
+        if (dropPartitions) {
+          store.dropPartition(partition.getPartitionId());
+        }
       }
     } finally {
       if (exportLock.isHeldByCurrentThread()) {
