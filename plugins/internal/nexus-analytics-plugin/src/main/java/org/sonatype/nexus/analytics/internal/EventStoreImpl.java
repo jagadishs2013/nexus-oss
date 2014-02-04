@@ -53,7 +53,7 @@ public class EventStoreImpl
 
   private final JournalStore store;
 
-  private final SchemaStore schema;
+  private final SchemaStore schemaStore;
 
   private final Lifecycle lifecycle;
 
@@ -61,11 +61,11 @@ public class EventStoreImpl
 
   @Inject
   public EventStoreImpl(final @Named("nexusanalytics") JournalStore store,
-                        final @Named("nexusanalytics") SchemaStore schema,
+                        final @Named("nexusanalytics") SchemaStore schemaStore,
                         final @Named("nexusanalytics") Lifecycle lifecycle)
   {
     this.store = checkNotNull(store);
-    this.schema = checkNotNull(schema);
+    this.schemaStore = checkNotNull(schemaStore);
     this.lifecycle = checkNotNull(lifecycle);
   }
   
@@ -74,8 +74,8 @@ public class EventStoreImpl
     lifecycle.init();
     lifecycle.start();
     
-    if (schema.retrieveSchema(SCHEMA_NAME) == null) {
-      Schema eventSchema = new Schema(ImmutableList.of(
+    if (schemaStore.retrieveSchema(SCHEMA_NAME) == null) {
+      Schema schema = new Schema(ImmutableList.of(
           new Attribute("type", Type.UTF8_SMALLSTRING, null, false),
           new Attribute("timestamp", Type.I64, null, true),
           new Attribute("sequence", Type.I64, null, true),
@@ -83,7 +83,7 @@ public class EventStoreImpl
           new Attribute("sessionId", Type.UTF8_SMALLSTRING, null, true),
           new Attribute("attributes", Type.MAP, null, true)));
       
-      schema.createSchema(SCHEMA_NAME, eventSchema);
+      schemaStore.createSchema(SCHEMA_NAME, schema);
     }
   }
 
