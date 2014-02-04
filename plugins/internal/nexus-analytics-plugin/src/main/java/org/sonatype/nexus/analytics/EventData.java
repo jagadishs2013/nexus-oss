@@ -27,8 +27,6 @@ public class EventData
 
   private Long timestamp;
 
-  private Long sequence;
-
   // TODO: hostId, orgId... these may be sent in surrounding data as these will always be the same?
 
   private String userId;
@@ -51,14 +49,6 @@ public class EventData
 
   public void setTimestamp(final Long timestamp) {
     this.timestamp = timestamp;
-  }
-
-  public Long getSequence() {
-    return sequence;
-  }
-
-  public void setSequence(final Long sequence) {
-    this.sequence = sequence;
   }
 
   public String getUserId() {
@@ -86,7 +76,6 @@ public class EventData
     return "EventData{" +
         "type='" + type + '\'' +
         ", timestamp=" + timestamp +
-        ", sequence=" + sequence +
         ", userId='" + userId + '\'' +
         ", sessionId='" + sessionId + '\'' +
         ", attributes=" + attributes +

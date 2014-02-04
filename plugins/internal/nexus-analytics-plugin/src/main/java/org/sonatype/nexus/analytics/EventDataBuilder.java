@@ -12,8 +12,6 @@
  */
 package org.sonatype.nexus.analytics;
 
-import org.sonatype.nexus.analytics.internal.CyclicCounter;
-
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.session.Session;
 import org.apache.shiro.subject.Subject;
@@ -27,14 +25,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class EventDataBuilder
 {
-  private static final CyclicCounter counter = new CyclicCounter(999_999_999_999_999_999L);
-
   private final EventData data = new EventData();
 
   public EventDataBuilder(final String type) {
     data.setType(type);
-    data.setTimestamp(System.currentTimeMillis());
-    data.setSequence(counter.next());
+    data.setTimestamp(System.nanoTime());
 
     // capture the user and session ids if we can
     Subject subject = SecurityUtils.getSubject();

@@ -83,12 +83,7 @@ NX.define('Nexus.analytics.view.Events', {
           {
             id: 'timestamp',
             header: 'Timestamp',
-            dataIndex: 'timestamp',
-          },
-          {
-            id: 'sequence',
-            header: 'Sequence',
-            dataIndex: 'sequence'
+            dataIndex: 'timestamp'
           },
           {
             id: 'orgId',

@@ -58,7 +58,6 @@ NX.define('Nexus.analytics.store.Events', {
         fields: [
           'type',
           'timestamp',
-          'sequence',
           'orgId',
           'hostId',
           'userId',

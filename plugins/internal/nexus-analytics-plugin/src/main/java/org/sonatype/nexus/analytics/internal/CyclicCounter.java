@@ -17,6 +17,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+// FIXME: Move to goodies, not used anymore here but generally still useful
+
 /**
  * Cyclic counter.
  *

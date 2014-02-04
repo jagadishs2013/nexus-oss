@@ -78,7 +78,6 @@ public class EventStoreImpl
       Schema schema = new Schema(ImmutableList.of(
           new Attribute("type", Type.UTF8_SMALLSTRING, null, false),
           new Attribute("timestamp", Type.I64, null, true),
-          new Attribute("sequence", Type.I64, null, true),
           new Attribute("userId", Type.UTF8_SMALLSTRING, null, true),
           new Attribute("sessionId", Type.UTF8_SMALLSTRING, null, true),
           new Attribute("attributes", Type.MAP, null, true)));
