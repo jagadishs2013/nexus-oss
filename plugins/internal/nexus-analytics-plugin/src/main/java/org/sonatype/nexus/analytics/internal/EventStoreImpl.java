@@ -12,17 +12,6 @@
  */
 package org.sonatype.nexus.analytics.internal;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import io.kazuki.v0.internal.v2schema.Attribute;
-import io.kazuki.v0.internal.v2schema.Attribute.Type;
-import io.kazuki.v0.internal.v2schema.Schema;
-import io.kazuki.v0.store.journal.JournalStore;
-import io.kazuki.v0.store.journal.PartitionInfo;
-import io.kazuki.v0.store.journal.PartitionInfoSnapshot;
-import io.kazuki.v0.store.lifecycle.Lifecycle;
-import io.kazuki.v0.store.schema.SchemaStore;
-import io.kazuki.v0.store.schema.TypeValidation;
-
 import java.io.PrintWriter;
 import java.util.Iterator;
 import java.util.concurrent.locks.ReentrantLock;
@@ -37,6 +26,17 @@ import org.sonatype.sisu.goodies.lifecycle.LifecycleSupport;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import io.kazuki.v0.internal.v2schema.Attribute;
+import io.kazuki.v0.internal.v2schema.Attribute.Type;
+import io.kazuki.v0.internal.v2schema.Schema;
+import io.kazuki.v0.store.journal.JournalStore;
+import io.kazuki.v0.store.journal.PartitionInfo;
+import io.kazuki.v0.store.journal.PartitionInfoSnapshot;
+import io.kazuki.v0.store.lifecycle.Lifecycle;
+import io.kazuki.v0.store.schema.SchemaStore;
+import io.kazuki.v0.store.schema.TypeValidation;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Default {@link EventStore} implementation.
@@ -49,16 +49,24 @@ public class EventStoreImpl
   extends LifecycleSupport
   implements EventStore
 {
-  private final JournalStore store; 
+  private static final String SCHEMA_NAME = "event_data";
+
+  private final JournalStore store;
+
   private final SchemaStore schema;
+
   private final Lifecycle lifecycle;
+
   private final ReentrantLock exportLock = new ReentrantLock();
 
   @Inject
-  public EventStoreImpl(@Named("nexusanalytics") JournalStore store, @Named("nexusanalytics") SchemaStore schema, @Named("nexusanalytics") Lifecycle lifecycle) {
-    this.store = store;
-    this.schema = schema;
-    this.lifecycle = lifecycle;
+  public EventStoreImpl(final @Named("nexusanalytics") JournalStore store,
+                        final @Named("nexusanalytics") SchemaStore schema,
+                        final @Named("nexusanalytics") Lifecycle lifecycle)
+  {
+    this.store = checkNotNull(store);
+    this.schema = checkNotNull(schema);
+    this.lifecycle = checkNotNull(lifecycle);
   }
   
   @Override
@@ -66,7 +74,7 @@ public class EventStoreImpl
     lifecycle.init();
     lifecycle.start();
     
-    if (schema.retrieveSchema("event_data") == null) {
+    if (schema.retrieveSchema(SCHEMA_NAME) == null) {
       Schema eventSchema = new Schema(ImmutableList.of(
           new Attribute("type", Type.UTF8_SMALLSTRING, null, false),
           new Attribute("timestamp", Type.I64, null, true),
@@ -75,7 +83,7 @@ public class EventStoreImpl
           new Attribute("sessionId", Type.UTF8_SMALLSTRING, null, true),
           new Attribute("attributes", Type.MAP, null, true)));
       
-      schema.createSchema("event_data", eventSchema);
+      schema.createSchema(SCHEMA_NAME, eventSchema);
     }
   }
 
@@ -88,7 +96,7 @@ public class EventStoreImpl
   @Override
   public void add(final EventData data) throws Exception {
     checkNotNull(data);
-    store.append("event_data", EventData.class, data, TypeValidation.STRICT);
+    store.append(SCHEMA_NAME, EventData.class, data, TypeValidation.STRICT);
   }
 
   @Override
@@ -104,7 +112,7 @@ public class EventStoreImpl
 
   @Override
   public Iterator<EventData> iterator(final long index) throws Exception {
-    return store.getIteratorRelative("event_data", EventData.class, index, null);
+    return store.getIteratorRelative(SCHEMA_NAME, EventData.class, index, null);
   }
   
   private void exportAllData(PrintWriter writer, ObjectMapper mapper, boolean dropPartitions) throws Exception {
@@ -123,7 +131,7 @@ public class EventStoreImpl
           break;
         }
         
-        Iterator<EventData> events = store.getIteratorRelative("event_data", EventData.class, 0L, partition.getSize());
+        Iterator<EventData> events = store.getIteratorRelative(SCHEMA_NAME, EventData.class, 0L, partition.getSize());
 
         while (events.hasNext()) {
           mapper.writeValue(writer, events.next());
