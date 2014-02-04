@@ -87,6 +87,7 @@ class EventsResource
     }
 
     return [
+        count: events.size(),
         // total number of records (approximate) needed for paging support
         total: eventStore.approximateSize(),
         events: events
