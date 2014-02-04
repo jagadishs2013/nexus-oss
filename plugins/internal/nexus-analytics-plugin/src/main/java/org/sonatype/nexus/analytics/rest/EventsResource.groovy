@@ -64,15 +64,17 @@ class EventsResource
   /**
    * List events in range.
    *
-   * @param start   Starting index
-   * @param limit   Limit number of events, or -1 for unlimited.
+   * @param start Starting index
+   * @param limit Limit number of events, or -1 for unlimited.
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @RequiresPermissions('nexus:analytics')
-  List<EventData> list(final @QueryParam('start') @DefaultValue('0') int start,
-                       final @QueryParam('limit') @DefaultValue('-1') int limit)
+  Map list(final @QueryParam('start') @DefaultValue('0') int start,
+          final @QueryParam('limit') @DefaultValue('-1') int limit)
   {
+    log.debug "Listing events; start=$start limit=$limit"
+
     List<EventData> events = []
     def iter = eventStore.iterator(start)
     def count = 0
@@ -83,7 +85,12 @@ class EventsResource
         break
       }
     }
-    return events
+
+    return [
+        // total number of records (approximate) needed for paging support
+        total: eventStore.approximateSize(),
+        events: events
+    ]
   }
 
   /**
@@ -117,9 +124,9 @@ class EventsResource
   Map export(final Map params) {
     // TODO: export data based on request params, return ref for download
     return [
-        'file': '/foo/bar/baz/fixme.zip',
-        'name': 'fixme.zip',
-        'size': 1234
+        file: '/foo/bar/baz/fixme.zip',
+        name: 'fixme.zip',
+        size: 1234
     ]
   }
 

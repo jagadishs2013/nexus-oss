@@ -28,6 +28,13 @@ NX.define('Nexus.analytics.store.Events', {
     'Nexus.siesta'
   ],
 
+  statics: {
+    /**
+     * @public
+     */
+    PAGE_SIZE: 100
+  },
+
   /**
    * @constructor
    */
@@ -44,7 +51,8 @@ NX.define('Nexus.analytics.store.Events', {
       }),
 
       reader: NX.create('Ext.data.JsonReader', {
-        root: '',
+        root: 'events',
+        totalProperty: 'total',
         // FIXME: There is presently no 'id', timestamp+sequence is closest to an id
         //idProperty: 'name',
         fields: [

@@ -42,6 +42,7 @@ NX.define('Nexus.analytics.view.Events', {
   initComponent: function () {
     var me = this,
         icons = Nexus.analytics.Icons,
+        store = NX.create('Nexus.analytics.store.Events'),
         grid;
 
     me.grid = NX.create('Ext.grid.GridPanel', {
@@ -53,66 +54,81 @@ NX.define('Nexus.analytics.view.Events', {
         msgCls: 'loading-indicator'
       },
 
-      store: NX.create('Nexus.analytics.store.Events'),
+      store: store,
       stripeRows: true,
 
-      columns: [
-        {
-          width: 30,
-          resizable: false,
-          sortable: false,
-          fixed: true,
-          hideable: false,
-          menuDisabled: true,
-          renderer: function (value, metaData, record) {
-            return icons.forType(record.get('type')).img;
+      autoExpandColumn: 'sessionId',
+
+      colModel: NX.create('Ext.grid.ColumnModel', {
+        defaults: {
+          sortable: true
+        },
+        columns: [
+          {
+            width: 30,
+            resizable: false,
+            sortable: false,
+            fixed: true,
+            hideable: false,
+            menuDisabled: true,
+            renderer: function (value, metaData, record) {
+              return icons.forType(record.get('type')).img;
+            }
+          },
+          {
+            id: 'type',
+            header: 'Type',
+            dataIndex: 'type'
+          },
+          {
+            id: 'timestamp',
+            header: 'Timestamp',
+            dataIndex: 'timestamp',
+          },
+          {
+            id: 'sequence',
+            header: 'Sequence',
+            dataIndex: 'sequence'
+          },
+          {
+            id: 'orgId',
+            header: 'Organization',
+            dataIndex: 'orgId',
+            hidden: true
+          },
+          {
+            id: 'hostId',
+            header: 'Host',
+            dataIndex: 'hostId',
+            hidden: true
+          },
+          {
+            id: 'userId',
+            header: 'User',
+            dataIndex: 'userId'
+          },
+          {
+            id: 'sessionId',
+            header: 'Session',
+            dataIndex: 'sessionId'
           }
-        },
-        {
-          id: 'type',
-          header: 'Type',
-          dataIndex: 'type'
-        },
-        {
-          id: 'timestamp',
-          header: 'Timestamp',
-          dataIndex: 'timestamp'
-        },
-        {
-          id: 'sequence',
-          header: 'Sequence',
-          dataIndex: 'sequence'
-        },
-        {
-          id: 'orgId',
-          header: 'Organization',
-          dataIndex: 'orgId',
-          hidden: true
-        },
-        {
-          id: 'hostId',
-          header: 'Host',
-          dataIndex: 'hostId',
-          hidden: true
-        },
-        {
-          id: 'userId',
-          header: 'User',
-          dataIndex: 'userId'
-        },
-        {
-          id: 'sessionId',
-          header: 'Session',
-          dataIndex: 'sessionId'
-        }
-      ]
+        ]
+      }),
+
+      bbar: NX.create('Ext.PagingToolbar', {
+        pageSize: Nexus.analytics.store.Events.PAGE_SIZE,
+        store: store,
+        displayInfo: true,
+        displayMsg: 'Displaying events {0} - {1} of {2}',
+        emptyMsg: 'No events to display'
+      })
     });
 
     Ext.apply(me, {
       items: [
         me.grid
       ],
-      
+
       tbar: [
         {
           xtype: 'button',
@@ -159,7 +175,7 @@ NX.define('Nexus.analytics.view.Events', {
    *
    * @public
    */
-  getGrid: function() {
+  getGrid: function () {
     return this.grid;
   }
 });

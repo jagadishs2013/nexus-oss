@@ -88,7 +88,12 @@ NX.define('Nexus.analytics.controller.Analytics', {
    */
   loadEvents: function(panel) {
     var store = panel.getGrid().getStore();
-    store.load();
+    store.load({
+      params: {
+        start: 0,
+        limit: Nexus.analytics.store.Events.PAGE_SIZE
+      }
+    });
   },
 
   /**
