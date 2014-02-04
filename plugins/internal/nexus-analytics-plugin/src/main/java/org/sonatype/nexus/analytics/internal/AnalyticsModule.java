@@ -10,15 +10,10 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
+
 package org.sonatype.nexus.analytics.internal;
 
 import java.io.File;
-
-import io.kazuki.v0.store.easy.EasyPartitionedJournalStoreModule;
-import io.kazuki.v0.store.jdbi.JdbiDataSourceConfiguration;
-import io.kazuki.v0.store.keyvalue.KeyValueStoreConfiguration;
-import io.kazuki.v0.store.lifecycle.LifecycleModule;
-import io.kazuki.v0.store.sequence.SequenceServiceConfiguration;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -31,14 +26,21 @@ import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.google.inject.servlet.ServletModule;
+import io.kazuki.v0.store.easy.EasyPartitionedJournalStoreModule;
+import io.kazuki.v0.store.jdbi.JdbiDataSourceConfiguration;
+import io.kazuki.v0.store.keyvalue.KeyValueStoreConfiguration;
+import io.kazuki.v0.store.lifecycle.LifecycleModule;
+import io.kazuki.v0.store.sequence.SequenceServiceConfiguration;
 
 /**
  * Analytics guice module.
- * 
+ *
  * @since 2.8
  */
 @Named
-public class AnalyticsModule extends AbstractModule {
+public class AnalyticsModule
+    extends AbstractModule
+{
   @Override
   protected void configure() {
     install(new LifecycleModule("nexusanalytics"));
@@ -52,7 +54,8 @@ public class AnalyticsModule extends AbstractModule {
 
     install(journalModule);
 
-    install(new ServletModule() {
+    install(new ServletModule()
+    {
       @Override
       protected void configureServlets() {
         // collection needs security filters applied first
@@ -93,11 +96,13 @@ public class AnalyticsModule extends AbstractModule {
     return builder.build();
   }
 
-  private static class JdbiConfigurationProvider implements Provider<JdbiDataSourceConfiguration> {
+  private static class JdbiConfigurationProvider
+      implements Provider<JdbiDataSourceConfiguration>
+  {
     private final ApplicationConfiguration config;
 
     @Inject
-    public JdbiConfigurationProvider(ApplicationConfiguration config) {
+    public JdbiConfigurationProvider(final ApplicationConfiguration config) {
       this.config = config;
     }
 
@@ -107,8 +112,9 @@ public class AnalyticsModule extends AbstractModule {
 
       builder.withJdbcDriver("org.h2.Driver");
 
-      builder.withJdbcUrl("jdbc:h2:" + config.getWorkingDirectory("nexus-analytics-plugin-db") + File.separator
-          + "analytics");
+      File basedir = config.getWorkingDirectory("db");
+      File dir = new File(basedir, "analytics/analytics");
+      builder.withJdbcUrl("jdbc:h2:" + dir.getAbsolutePath());
 
       builder.withJdbcUser("root");
       builder.withJdbcPassword("not_really_used");
