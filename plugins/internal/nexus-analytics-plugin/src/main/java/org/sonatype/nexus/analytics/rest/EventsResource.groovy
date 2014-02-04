@@ -71,7 +71,7 @@ class EventsResource
   @Produces(MediaType.APPLICATION_JSON)
   @RequiresPermissions('nexus:analytics')
   Map list(final @QueryParam('start') @DefaultValue('0') int start,
-          final @QueryParam('limit') @DefaultValue('-1') int limit)
+           final @QueryParam('limit') @DefaultValue('-1') int limit)
   {
     log.debug "Listing events; start=$start limit=$limit"
 
