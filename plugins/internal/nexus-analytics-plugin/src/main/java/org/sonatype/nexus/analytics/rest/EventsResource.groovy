@@ -18,11 +18,14 @@ import org.sonatype.nexus.analytics.EventData
 import org.sonatype.nexus.analytics.EventExporter
 import org.sonatype.nexus.analytics.EventRecorder
 import org.sonatype.nexus.analytics.EventStore
+import org.sonatype.nexus.analytics.internal.SubmitTask
+import org.sonatype.nexus.scheduling.NexusScheduler
 import org.sonatype.sisu.goodies.common.ComponentSupport
 import org.sonatype.sisu.siesta.common.Resource
 
 import javax.inject.Inject
 import javax.inject.Named
+import javax.inject.Provider
 import javax.inject.Singleton
 import javax.ws.rs.Consumes
 import javax.ws.rs.DELETE
@@ -50,20 +53,30 @@ class EventsResource
 {
   static final String RESOURCE_URI = '/analytics/events'
 
+  // FIXME: Sort out facade interface
+
   private final EventRecorder eventRecorder
 
   private final EventStore eventStore
 
   private final EventExporter eventExporter
 
+  private final NexusScheduler nexusScheduler
+
+  private final Provider<SubmitTask> submitTaskFactory
+
   @Inject
   EventsResource(final EventRecorder eventRecorder,
                  final EventStore eventStore,
-                 final EventExporter eventExporter)
+                 final EventExporter eventExporter,
+                 final NexusScheduler nexusScheduler,
+                 final Provider<SubmitTask> submitTaskFactory)
   {
     this.eventRecorder = checkNotNull(eventRecorder)
     this.eventStore = checkNotNull(eventStore)
     this.eventExporter = checkNotNull(eventExporter)
+    this.nexusScheduler = checkNotNull(nexusScheduler)
+    this.submitTaskFactory = checkNotNull(submitTaskFactory)
   }
 
   /**
@@ -115,8 +128,8 @@ class EventsResource
   @Path('submit')
   @RequiresPermissions('nexus:analytics')
   void submit() {
-    // TODO: submit data, probably should fire up a background task.
-    // TODO: we may need an automatic task, and a manual task impl?
+    def task = submitTaskFactory.get()
+    nexusScheduler.submit(null, task)
   }
 
   /**
@@ -124,13 +137,14 @@ class EventsResource
    */
   @POST
   @Path('export')
+  @Produces(MediaType.APPLICATION_JSON)
   @RequiresPermissions('nexus:analytics')
   Map export() {
-    // TODO: export data based on request params, return ref for download
+    def file = eventExporter.export(false)
     return [
-        file: '/foo/bar/baz/fixme.zip',
-        name: 'fixme.zip',
-        size: 1234
+        file: file.absolutePath,
+        name: file.name,
+        size: file.size()
     ]
   }
 

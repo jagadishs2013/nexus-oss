@@ -22,7 +22,6 @@ import java.io.File;
 public interface EventExporter
 {
   // FIXME: Probably need a way to return a list of exported bundles
-  // FIXME: Export should have a flag to clear data after export
 
-  File export() throws Exception;
+  File export(boolean dropAfterExport) throws Exception;
 }

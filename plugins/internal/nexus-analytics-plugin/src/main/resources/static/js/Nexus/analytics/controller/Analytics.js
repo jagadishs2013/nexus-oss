@@ -205,8 +205,7 @@ NX.define('Nexus.analytics.controller.Analytics', {
               store.load();
             },
             success: function () {
-              me.showMessage('Event data has been submitted');
-              // FIXME: hook up to allow user to download after auth
+              me.showMessage('Event data submission in progress');
             },
             failure: function (response) {
               me.showMessage('Failed to submit event data: ' + me.parseExceptionMessage(response));

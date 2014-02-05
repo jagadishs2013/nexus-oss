@@ -21,6 +21,8 @@ import java.util.Iterator;
  */
 public interface EventStore
 {
+  String SCHEMA_NAME = "event_data";
+
   void add(EventData data) throws Exception;
 
   void clear() throws Exception;

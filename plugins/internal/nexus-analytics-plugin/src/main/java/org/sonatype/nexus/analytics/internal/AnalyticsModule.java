@@ -18,6 +18,7 @@ import java.io.File;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import org.sonatype.nexus.analytics.EventStore;
 import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
 import org.sonatype.nexus.web.internal.SecurityFilter;
 
@@ -91,7 +92,7 @@ public class AnalyticsModule
     builder.withPartitionName("default");
     builder.withPartitionSize(1_000_000L);
     builder.withStrictTypeCreation(true);
-    builder.withDataType("event_data");
+    builder.withDataType(EventStore.SCHEMA_NAME);
 
     return builder.build();
   }

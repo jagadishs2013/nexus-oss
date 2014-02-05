@@ -13,15 +13,15 @@ import org.sonatype.nexus.scheduling.NexusTaskSupport;
 public class AutoSubmitTask
   extends NexusTaskSupport
 {
-  // TODO: Sort out if we need a descriptor for this bugger or not?
+  // TODO: probably need a descriptor for this guy
 
   @Override
   protected String getMessage() {
-    return "Submitting analytics events";
+    return "Automatically submitting analytics events";
   }
 
   @Override
   protected void execute() throws Exception {
-    // TODO
+    // TODO:
   }
 }
