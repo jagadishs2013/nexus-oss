@@ -102,6 +102,7 @@ public class EventExporterImpl
       while (partitions.hasNext()) {
         PartitionInfo partition = partitions.next();
         if (!partition.isClosed()) {
+          // skip new open partitions, this is new data _after_ the export was requested
           break;
         }
 
