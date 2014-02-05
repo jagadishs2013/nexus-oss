@@ -60,12 +60,14 @@ public class EventExporterImpl
     this.eventStore = checkNotNull(eventStore);
   }
 
+  /**
+   * @throws IllegalStateException If an export is already in progress.
+   */
   @Override
-  public File export(final boolean clear) throws Exception {
+  public File export(final boolean dropAfterExport) throws Exception {
     try {
       checkState(exportLock.tryLock(), "Already locked for export");
-
-      return doExport(clear);
+      return doExport(dropAfterExport);
     }
     finally {
       if (exportLock.isHeldByCurrentThread()) {
