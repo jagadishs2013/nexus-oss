@@ -92,14 +92,10 @@ public class EventExporterImpl
 
     // TODO: Write out a metadata.json with common, format + version shits?
 
+    int i = 0;
     try (ZipOutputStream output = new ZipOutputStream(new FileOutputStream(file))) {
-      ZipEntry entry = new ZipEntry("events.json");
-      output.putNextEntry(entry);
 
-      JsonGenerator generator = jsonFactory.createGenerator(output);
-      generator.writeStartArray();
-
-      // TODO: Perhaps give each partion we process its own events-N.json file
+      // write each partition to its own file in the zip
       Iterator<PartitionInfoSnapshot> partitions = journal.getAllPartitions();
       while (partitions.hasNext()) {
         PartitionInfo partition = partitions.next();
@@ -108,7 +104,14 @@ public class EventExporterImpl
           break;
         }
 
-        log.info("Exporting partition: {}", partition.getPartitionId());
+        // new entry in the zip for each partition
+        ZipEntry entry = new ZipEntry("events-" + i++ + ".json");
+        output.putNextEntry(entry);
+        log.info("Writing entry: {}, partition: {}", entry.getName(), partition.getPartitionId());
+
+        JsonGenerator generator = jsonFactory.createGenerator(output);
+        generator.writeStartArray();
+
         Iterator<EventData> events = journal.getIteratorRelative(
             EventStore.SCHEMA_NAME, EventData.class, 0L, partition.getSize());
 
@@ -118,18 +121,17 @@ public class EventExporterImpl
         generator.flush();
 
         if (dropAfterExport) {
-          log.info("Dropping partition: {}", partition.getPartitionId());
           journal.dropPartition(partition.getPartitionId());
         }
+
+        generator.writeEndArray();
+        generator.flush();
+        output.closeEntry();
       }
-
-      generator.writeEndArray();
-      generator.flush();
-      output.closeEntry();
     }
-
     // TODO: Move file to support dir
 
+    log.info("Exported {} partitions to: {}", i, file);
     return file;
   }
 }
