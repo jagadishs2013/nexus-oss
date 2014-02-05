@@ -140,7 +140,7 @@ class EventsResource
   @Produces(MediaType.APPLICATION_JSON)
   @RequiresPermissions('nexus:analytics')
   Map export() {
-    def file = eventExporter.export(false)
+    def file = eventExporter.export(false) // no drop
     return [
         file: file.absolutePath,
         name: file.name,
