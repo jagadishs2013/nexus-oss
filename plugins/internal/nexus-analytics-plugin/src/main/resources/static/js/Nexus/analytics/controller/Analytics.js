@@ -118,8 +118,8 @@ NX.define('Nexus.analytics.controller.Analytics', {
         store = button.up('nx-analytics-view-events').getGrid().getStore();
 
     Ext.Msg.show({
-      title: 'Clear all events',
-      msg: 'Clear all analytics event data?',
+      title: 'Clear events',
+      msg: 'Clear analytics event data?',
       buttons: Ext.Msg.OKCANCEL,
       icon: icons.get('clear').variant('x32').cls,
       fn: function (btn) {
@@ -149,7 +149,35 @@ NX.define('Nexus.analytics.controller.Analytics', {
    * @private
    */
   exportEvents: function(button) {
-    // TODO: show options dialog ([_] clear after, [_] anonymize)
+    var me = this,
+        icons = Nexus.analytics.Icons,
+        store = button.up('nx-analytics-view-events').getGrid().getStore();
+
+    Ext.Msg.show({
+      title: 'Export events',
+      msg: 'Export and download analytics event data?<br/>No data will be sent to Sonatype.',
+      buttons: Ext.Msg.OKCANCEL,
+      icon: icons.get('export').variant('x32').cls,
+      fn: function (btn) {
+        if (btn === 'ok') {
+          Ext.Ajax.request({
+            url: Nexus.siesta.basePath + '/analytics/events/export',
+            method: 'POST',
+            suppressStatus: true,
+            callback: function () {
+              store.load();
+            },
+            success: function () {
+              me.showMessage('Event data has been exported');
+              // FIXME: hook up to allow user to download after auth
+            },
+            failure: function (response) {
+              me.showMessage('Failed to export event data: ' + me.parseExceptionMessage(response));
+            }
+          });
+        }
+      }
+    });
   },
 
   /**
@@ -158,6 +186,34 @@ NX.define('Nexus.analytics.controller.Analytics', {
    * @private
    */
   submitEvents: function(button) {
-    // TODO: show options dialog ([_] clear after)
+    var me = this,
+        icons = Nexus.analytics.Icons,
+        store = button.up('nx-analytics-view-events').getGrid().getStore();
+
+    Ext.Msg.show({
+      title: 'Submit events',
+      msg: 'Submit analytics event data to Sonatype?',
+      buttons: Ext.Msg.OKCANCEL,
+      icon: icons.get('submit').variant('x32').cls,
+      fn: function (btn) {
+        if (btn === 'ok') {
+          Ext.Ajax.request({
+            url: Nexus.siesta.basePath + '/analytics/events/submit',
+            method: 'POST',
+            suppressStatus: true,
+            callback: function () {
+              store.load();
+            },
+            success: function () {
+              me.showMessage('Event data has been submitted');
+              // FIXME: hook up to allow user to download after auth
+            },
+            failure: function (response) {
+              me.showMessage('Failed to submit event data: ' + me.parseExceptionMessage(response));
+            }
+          });
+        }
+      }
+    });
   }
 });

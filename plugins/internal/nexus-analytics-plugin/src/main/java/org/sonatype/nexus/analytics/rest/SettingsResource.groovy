@@ -46,8 +46,8 @@ class SettingsResource
   Map get() {
     // TODO: for now just return something
     return [
-        'collection': false,
-        'reporting': false
+        collection: false,
+        reporting: false
     ]
   }
 

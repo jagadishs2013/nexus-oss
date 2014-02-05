@@ -15,6 +15,7 @@ package org.sonatype.nexus.analytics.rest
 
 import org.apache.shiro.authz.annotation.RequiresPermissions
 import org.sonatype.nexus.analytics.EventData
+import org.sonatype.nexus.analytics.EventExporter
 import org.sonatype.nexus.analytics.EventRecorder
 import org.sonatype.nexus.analytics.EventStore
 import org.sonatype.sisu.goodies.common.ComponentSupport
@@ -53,12 +54,16 @@ class EventsResource
 
   private final EventStore eventStore
 
+  private final EventExporter eventExporter
+
   @Inject
   EventsResource(final EventRecorder eventRecorder,
-                 final EventStore eventStore)
+                 final EventStore eventStore,
+                 final EventExporter eventExporter)
   {
-    this.eventRecorder = checkNotNull(eventRecorder);
+    this.eventRecorder = checkNotNull(eventRecorder)
     this.eventStore = checkNotNull(eventStore)
+    this.eventExporter = checkNotNull(eventExporter)
   }
 
   /**
@@ -119,10 +124,8 @@ class EventsResource
    */
   @POST
   @Path('export')
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
   @RequiresPermissions('nexus:analytics')
-  Map export(final Map params) {
+  Map export() {
     // TODO: export data based on request params, return ref for download
     return [
         file: '/foo/bar/baz/fixme.zip',
@@ -138,7 +141,7 @@ class EventsResource
    */
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
-  void append(List<EventData> events) {
+  void append(final List<EventData> events) {
     if (!eventRecorder.enabled) {
       log.warn 'Ignoring events; recording is disabled'
       return
