@@ -42,6 +42,7 @@ public class EventDataBuilder
       Session session = subject.getSession(false);
       if (session != null) {
         // FIXME: We probably want to anonymise this right away, as this could be used by admin to attack another user
+        // FIXME: Can probably do this when the EventData is consumed to avoid needing to make this an injected compoennt
         data.setSessionId(session.getId().toString());
       }
     }
