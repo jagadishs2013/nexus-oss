@@ -84,28 +84,33 @@ public class EventStoreImpl
   }
 
   public JournalStore getJournalStore() {
+    ensureStarted();
     return store;
   }
 
   @Override
   public void add(final EventData data) throws Exception {
     checkNotNull(data);
+    ensureStarted();
     store.append(SCHEMA_NAME, EventData.class, data, TypeValidation.STRICT);
   }
 
   @Override
   public void clear() throws Exception {
+    ensureStarted();
     store.clear();
     log.debug("Cleared");
   }
 
   @Override
   public long approximateSize() throws Exception {
+    ensureStarted();
     return store.approximateSize();
   }
 
   @Override
   public Iterator<EventData> iterator(final long index) throws Exception {
+    ensureStarted();
     return store.getIteratorRelative(SCHEMA_NAME, EventData.class, index, null);
   }
 }
