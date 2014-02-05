@@ -33,7 +33,6 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.google.common.base.Throwables;
 import io.kazuki.v0.store.journal.JournalStore;
 import io.kazuki.v0.store.journal.PartitionInfo;
 import io.kazuki.v0.store.journal.PartitionInfoSnapshot;
@@ -67,11 +66,6 @@ public class EventExporterImpl
       checkState(exportLock.tryLock(), "Already locked for export");
 
       return doExport(clear);
-    }
-    catch (Exception e) {
-      // HACK: siesta is masking traces
-      log.error(e.toString(), e);
-      throw Throwables.propagate(e);
     }
     finally {
       if (exportLock.isHeldByCurrentThread()) {
