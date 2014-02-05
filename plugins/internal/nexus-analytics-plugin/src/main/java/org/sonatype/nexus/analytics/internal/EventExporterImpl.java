@@ -78,6 +78,8 @@ public class EventExporterImpl
 
   private File doExport(final boolean dropAfterExport) throws Exception {
     JournalStore journal = eventStore.getJournalStore();
+
+    // Close the current partition, so that any new events are separate from those that exist already
     journal.closeActivePartition();
 
     // TODO: Sort out max for each zip file
