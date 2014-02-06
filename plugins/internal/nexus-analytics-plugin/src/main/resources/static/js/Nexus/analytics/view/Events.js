@@ -142,7 +142,14 @@ NX.define('Nexus.analytics.view.Events', {
             header: 'Attributes',
             dataIndex: 'attributes',
             renderer: function(value, metaData, record) {
-              return Ext.util.JSON.encode(value);
+              var text = '';
+              Ext.iterate(value, function(name, value) {
+                if (text !== '') {
+                  text += ', ';
+                }
+                text += name + '=' + value;
+              });
+              return text;
             }
           }
         ]
