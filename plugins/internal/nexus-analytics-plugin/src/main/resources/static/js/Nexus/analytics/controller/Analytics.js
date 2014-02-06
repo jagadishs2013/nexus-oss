@@ -128,11 +128,9 @@ NX.define('Nexus.analytics.controller.Analytics', {
             url: Nexus.siesta.basePath + '/analytics/events',
             method: 'DELETE',
             suppressStatus: true,
-            callback: function () {
-              store.load();
-            },
             success: function () {
               me.showMessage('Event data has been cleared');
+              store.load();
             },
             failure: function (response) {
               me.showMessage('Failed to clear event data: ' + me.parseExceptionMessage(response));
