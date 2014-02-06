@@ -12,6 +12,8 @@
  */
 package org.sonatype.nexus.analytics;
 
+import javax.annotation.Nullable;
+
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.session.Session;
 import org.apache.shiro.subject.Subject;
@@ -48,9 +50,8 @@ public class EventDataBuilder
     }
   }
 
-  public EventDataBuilder set(final String name, final Object value) {
+  public EventDataBuilder set(final String name, final @Nullable Object value) {
     checkNotNull(name);
-    checkNotNull(value);
     data.getAttributes().put(name, value);
     return this;
   }

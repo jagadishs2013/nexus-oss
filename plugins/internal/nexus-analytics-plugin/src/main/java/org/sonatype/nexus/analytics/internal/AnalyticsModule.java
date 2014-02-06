@@ -67,6 +67,7 @@ public class AnalyticsModule
         filter("/service/siesta/*").through(RestRequestCollector.class);
 
         // capture internal/metrics requests
+        // FIXME: This is not actually capturing these requests, probably due to priority ordering bullshit
         filter("/internal/*").through(RestRequestCollector.class);
       }
     });

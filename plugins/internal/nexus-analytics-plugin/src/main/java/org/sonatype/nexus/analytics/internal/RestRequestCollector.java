@@ -70,12 +70,17 @@ public class RestRequestCollector
     EventDataBuilder builder = null;
     Long startTime = null;
 
+    // TODO: May actually want to parse UA here to get browser/non-browser?
+    // TODO: For now though, relying on special header (which only is set for ajax requests)
+    // TODO: ... to detect if the request came from the UI or not
+    boolean ui = httpRequest.getHeader("X-Nexus-UI") != null;
+
     // only attempt to record details if collection is enabled
     if (recorder.isEnabled()) {
       builder = new EventDataBuilder("REST")
           .set("method", httpRequest.getMethod())
           .set("path", getPath(httpRequest))
-          .set("userAgent", httpRequest.getHeader("User-Agent"));
+          .set("ui", ui);
       startTime = System.currentTimeMillis();
     }
 
