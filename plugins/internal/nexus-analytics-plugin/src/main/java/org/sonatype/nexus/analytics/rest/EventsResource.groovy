@@ -97,7 +97,13 @@ class EventsResource
     def iter = eventStore.iterator(start)
     def count = 0
     while (iter.hasNext()) {
-      events << iter.next()
+      def event = iter.next()
+      // strip non-anonymized sensitive data
+      if (event.sessionId) {
+        event.sessionId = 'stripped'
+      }
+
+      events << event
       count++
       if (limit > 0 && count >= limit) {
         break

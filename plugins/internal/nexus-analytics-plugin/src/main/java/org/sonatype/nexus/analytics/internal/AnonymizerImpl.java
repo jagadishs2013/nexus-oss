@@ -16,6 +16,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
 import org.sonatype.nexus.analytics.Anonymizer;
 import org.sonatype.nexus.util.Tokens;
@@ -34,6 +36,8 @@ import static com.google.common.base.Preconditions.checkState;
  *
  * @since 2.8
  */
+@Named
+@Singleton
 public class AnonymizerImpl
   extends ComponentSupport
   implements Anonymizer

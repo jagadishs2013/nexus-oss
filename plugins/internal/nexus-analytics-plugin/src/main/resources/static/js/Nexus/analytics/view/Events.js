@@ -113,27 +113,9 @@ NX.define('Nexus.analytics.view.Events', {
             width: 130
           },
           {
-            id: 'orgId',
-            header: 'Organization',
-            dataIndex: 'orgId',
-            hidden: true
-          },
-          {
-            id: 'hostId',
-            header: 'Host',
-            dataIndex: 'hostId',
-            hidden: true
-          },
-          {
             id: 'userId',
             header: 'User',
             dataIndex: 'userId'
-          },
-          {
-            id: 'sessionId',
-            header: 'Session',
-            dataIndex: 'sessionId',
-            hidden: true
           },
           {
             id: 'attributes',

@@ -24,6 +24,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
+import org.sonatype.nexus.analytics.Anonymizer;
 import org.sonatype.nexus.analytics.EventData;
 import org.sonatype.nexus.analytics.EventExporter;
 import org.sonatype.nexus.analytics.EventStore;
@@ -53,11 +54,16 @@ public class EventExporterImpl
 {
   private final EventStoreImpl eventStore;
 
+  private final Anonymizer anonymizer;
+
   private final ReentrantLock exportLock = new ReentrantLock();
 
   @Inject
-  public EventExporterImpl(final EventStoreImpl eventStore) {
+  public EventExporterImpl(final EventStoreImpl eventStore,
+                           final Anonymizer anonymizer)
+  {
     this.eventStore = checkNotNull(eventStore);
+    this.anonymizer = checkNotNull(anonymizer);
   }
 
   /**
@@ -116,7 +122,7 @@ public class EventExporterImpl
             EventStore.SCHEMA_NAME, EventData.class, 0L, partition.getSize());
 
         while (events.hasNext()) {
-          generator.writeObject(events.next());
+          generator.writeObject(anonymize(events.next()));
         }
         generator.flush();
 
@@ -133,5 +139,21 @@ public class EventExporterImpl
 
     log.info("Exported {} partitions to: {}", i, file);
     return file;
+  }
+
+  /**
+   * Anonymize sensitive event data.
+   */
+  private Object anonymize(final EventData event) {
+    event.setUserId(anonymize(event.getUserId()));
+    event.setSessionId(anonymize(event.getSessionId()));
+    return event;
+  }
+
+  private String anonymize(final String text) {
+    if (text != null) {
+      return anonymizer.anonymize(text);
+    }
+    return null;
   }
 }
