@@ -43,34 +43,32 @@ NX.define('Nexus.analytics.view.Events', {
     var me = this,
         icons = Nexus.analytics.Icons,
         store = NX.create('Nexus.analytics.store.Events'),
-        grid;
+        expander = NX.create('Ext.ux.grid.RowExpander', {
+          tpl: new Ext.XTemplate(
+              '<table style="padding: 5px;">',
+              '<tpl for="this.attributes(values)">',
+              '<tr>',
+              '<td style="padding-right: 5px;"><b>{name}</b></td>',
+              '<td>{value}</td>',
+              '</tr>',
+              '</tpl>',
+              '</table>',
+              {
+                compiled: true,
 
-    var expander = NX.create('Ext.ux.grid.RowExpander', {
-      tpl: new Ext.XTemplate(
-          '<table style="padding: 5px;">',
-          '<tpl for="this.attributes(values)">',
-          '<tr>',
-          '<td style="padding-right: 5px;"><b>{name}</b></td>',
-          '<td>{value}</td>',
-          '</tr>',
-          '</tpl>',
-          '</table>',
-          {
-            compiled: true,
-
-            /**
-             * Convert attributes field to array of name/value pairs for rendering in template.
-             */
-            attributes: function(values) {
-              var result = [];
-              Ext.iterate(values.attributes, function(name, value) {
-                result.push({ name: name, value: value });
-              });
-              return result;
-            }
-          }
-      )
-    });
+                /**
+                 * Convert attributes field to array of name/value pairs for rendering in template.
+                 */
+                attributes: function (values) {
+                  var result = [];
+                  Ext.iterate(values.attributes, function (name, value) {
+                    result.push({ name: name, value: value });
+                  });
+                  return result;
+                }
+              }
+          )
+        });
 
     me.grid = NX.create('Ext.grid.GridPanel', {
       border: false,
