@@ -150,8 +150,7 @@ NX.define('Nexus.analytics.controller.Analytics', {
    */
   exportEvents: function(button) {
     var me = this,
-        icons = Nexus.analytics.Icons,
-        store = button.up('nx-analytics-view-events').getGrid().getStore();
+        icons = Nexus.analytics.Icons;
 
     Ext.Msg.show({
       title: 'Export events',
@@ -184,8 +183,7 @@ NX.define('Nexus.analytics.controller.Analytics', {
    */
   submitEvents: function(button) {
     var me = this,
-        icons = Nexus.analytics.Icons,
-        store = button.up('nx-analytics-view-events').getGrid().getStore();
+        icons = Nexus.analytics.Icons;
 
     Ext.Msg.show({
       title: 'Submit events',
