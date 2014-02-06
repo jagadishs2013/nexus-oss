@@ -164,9 +164,6 @@ NX.define('Nexus.analytics.controller.Analytics', {
             url: Nexus.siesta.basePath + '/analytics/events/export',
             method: 'POST',
             suppressStatus: true,
-            callback: function () {
-              store.load();
-            },
             success: function () {
               me.showMessage('Event data has been exported');
               // FIXME: hook up to allow user to download after auth
@@ -201,9 +198,6 @@ NX.define('Nexus.analytics.controller.Analytics', {
             url: Nexus.siesta.basePath + '/analytics/events/submit',
             method: 'POST',
             suppressStatus: true,
-            callback: function () {
-              store.load();
-            },
             success: function () {
               me.showMessage('Event data submission in progress');
             },
