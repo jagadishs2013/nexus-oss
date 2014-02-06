@@ -152,6 +152,8 @@ public class EventExporterImpl
 
   private String anonymize(final String text) {
     if (text != null) {
+      // TODO: Probably want to setup a tiny cache here to avoid re-anonymizing the same data over and over
+      // TODO: the 2 main datapoints to anonymize (userId an sessionId) are likely to reoccur many times
       return anonymizer.anonymize(text);
     }
     return null;
