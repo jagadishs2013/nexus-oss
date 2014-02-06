@@ -45,6 +45,29 @@ NX.define('Nexus.analytics.view.Events', {
         store = NX.create('Nexus.analytics.store.Events'),
         grid;
 
+    var expander = NX.create('Ext.ux.grid.RowExpander', {
+      tpl: new Ext.XTemplate(
+          '<table style="padding: 5px;">',
+          '<tpl for="this.attributes(values)">',
+          '<tr>',
+          '<td style="padding-right: 5px;"><b>{name}</b></td>',
+          '<td>{value}</td>',
+          '</tr>',
+          '</tpl>',
+          '</table>',
+          {
+            compiled: true,
+            attributes: function(values) {
+              var result = [];
+              Ext.iterate(values.attributes, function(name, value) {
+                result.push({ name: name, value: value });
+              });
+              return result;
+            }
+          }
+      )
+    });
+
     me.grid = NX.create('Ext.grid.GridPanel', {
       border: false,
       autoScroll: true,
@@ -57,13 +80,14 @@ NX.define('Nexus.analytics.view.Events', {
       store: store,
       stripeRows: true,
 
-      autoExpandColumn: 'sessionId',
+      autoExpandColumn: 'attributes',
 
       colModel: NX.create('Ext.grid.ColumnModel', {
         defaults: {
           sortable: true
         },
         columns: [
+          expander,
           {
             width: 30,
             resizable: false,
@@ -106,10 +130,23 @@ NX.define('Nexus.analytics.view.Events', {
           {
             id: 'sessionId',
             header: 'Session',
-            dataIndex: 'sessionId'
+            dataIndex: 'sessionId',
+            hidden: true
+          },
+          {
+            id: 'attributes',
+            header: 'Attributes',
+            dataIndex: 'attributes',
+            renderer: function(value, metaData, record) {
+              return Ext.util.JSON.encode(value);
+            }
           }
         ]
       }),
+
+      plugins: [
+        expander
+      ],
 
       bbar: NX.create('Ext.PagingToolbar', {
         pageSize: Nexus.analytics.store.Events.PAGE_SIZE,
