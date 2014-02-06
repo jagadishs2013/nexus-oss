@@ -57,6 +57,10 @@ NX.define('Nexus.analytics.view.Events', {
           '</table>',
           {
             compiled: true,
+
+            /**
+             * Convert attributes field to array of name/value pairs for rendering in template.
+             */
             attributes: function(values) {
               var result = [];
               Ext.iterate(values.attributes, function(name, value) {
