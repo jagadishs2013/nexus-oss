@@ -13,6 +13,7 @@
 
 package org.sonatype.nexus.analytics.rest
 
+import com.yammer.metrics.annotation.Timed
 import org.apache.shiro.authz.annotation.RequiresPermissions
 import org.sonatype.nexus.analytics.EventData
 import org.sonatype.nexus.analytics.EventExporter
@@ -88,6 +89,7 @@ class EventsResource
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @RequiresPermissions('nexus:analytics')
+  @Timed
   Map list(final @QueryParam('start') @DefaultValue('0') int start,
            final @QueryParam('limit') @DefaultValue('-1') int limit)
   {
@@ -123,6 +125,7 @@ class EventsResource
    */
   @DELETE
   @RequiresPermissions('nexus:analytics')
+  @Timed
   void clear() {
     eventStore.clear()
   }
@@ -133,6 +136,7 @@ class EventsResource
   @POST
   @Path('submit')
   @RequiresPermissions('nexus:analytics')
+  @Timed
   void submit() {
     def task = submitTaskFactory.get()
     nexusScheduler.submit(null, task)
@@ -145,6 +149,7 @@ class EventsResource
   @Path('export')
   @Produces(MediaType.APPLICATION_JSON)
   @RequiresPermissions('nexus:analytics')
+  @Timed
   Map export() {
     def file = eventExporter.export(false) // no drop
     return [
@@ -161,6 +166,7 @@ class EventsResource
    */
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
+  @Timed
   void append(final List<EventData> events) {
     if (!eventRecorder.enabled) {
       log.warn 'Ignoring events; recording is disabled'
