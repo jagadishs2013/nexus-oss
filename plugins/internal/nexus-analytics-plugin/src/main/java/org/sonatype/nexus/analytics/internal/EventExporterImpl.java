@@ -128,10 +128,9 @@ public class EventExporterImpl
 
     AnonymizerHelper anonymizerHelper = new AnonymizerHelper();
 
-    // TODO: Write out a metadata.json with common, format + version shits?
-
     int i = 0;
     try (ZipOutputStream output = new ZipOutputStream(new FileOutputStream(file))) {
+      // TODO: Write out a header.json with common (orgId, hostId, product info), format + version details
 
       // write each partition to its own file in the zip
       Iterator<PartitionInfoSnapshot> partitions = journal.getAllPartitions();
