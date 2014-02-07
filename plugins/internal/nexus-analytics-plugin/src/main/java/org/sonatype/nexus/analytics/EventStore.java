@@ -14,6 +14,8 @@ package org.sonatype.nexus.analytics;
 
 import java.util.Iterator;
 
+import javax.annotation.Nullable;
+
 /**
  * Analytics event data store.
  *
@@ -29,5 +31,5 @@ public interface EventStore
 
   long approximateSize() throws Exception;
 
-  Iterator<EventData> iterator(long index) throws Exception;
+  Iterator<EventData> iterator(long offset, @Nullable Long limit) throws Exception;
 }

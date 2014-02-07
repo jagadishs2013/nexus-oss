@@ -14,6 +14,7 @@ package org.sonatype.nexus.analytics.internal;
 
 import java.util.Iterator;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -109,8 +110,8 @@ public class EventStoreImpl
   }
 
   @Override
-  public Iterator<EventData> iterator(final long index) throws Exception {
+  public Iterator<EventData> iterator(final long offset, @Nullable Long limit) throws Exception {
     ensureStarted();
-    return store.getIteratorRelative(SCHEMA_NAME, EventData.class, index, null);
+    return store.getIteratorRelative(SCHEMA_NAME, EventData.class, offset, limit);
   }
 }

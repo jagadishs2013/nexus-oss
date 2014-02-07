@@ -96,7 +96,7 @@ class EventsResource
     log.debug "Listing events; start=$start limit=$limit"
 
     List<EventData> events = []
-    def iter = eventStore.iterator(start)
+    def iter = eventStore.iterator(start, limit)
     def count = 0
     while (iter.hasNext()) {
       def event = iter.next()
