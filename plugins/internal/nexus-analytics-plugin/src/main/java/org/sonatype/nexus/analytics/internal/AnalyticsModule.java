@@ -91,7 +91,7 @@ public class AnalyticsModule
     builder.withGroupName("nexus");
     builder.withStoreName("analytics");
     builder.withPartitionName("default");
-    builder.withPartitionSize(1_000_000L);
+    builder.withPartitionSize(100_000L);
     builder.withStrictTypeCreation(true);
     builder.withDataType(EventStore.SCHEMA_NAME);
 
