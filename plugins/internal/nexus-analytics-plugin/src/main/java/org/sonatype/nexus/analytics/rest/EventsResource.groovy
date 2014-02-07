@@ -104,6 +104,7 @@ class EventsResource
       if (event.sessionId) {
         event.sessionId = 'stripped'
       }
+      // NOTE: userId is not anonymized here, but will be in exported data
 
       events << event
       count++
