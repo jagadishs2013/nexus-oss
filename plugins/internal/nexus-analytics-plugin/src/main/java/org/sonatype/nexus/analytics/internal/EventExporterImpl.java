@@ -34,6 +34,8 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import io.kazuki.v0.store.journal.JournalStore;
 import io.kazuki.v0.store.journal.PartitionInfo;
 import io.kazuki.v0.store.journal.PartitionInfoSnapshot;
@@ -82,6 +84,34 @@ public class EventExporterImpl
     }
   }
 
+  /**
+   * Helper to anonymize sensitive event data.
+   */
+  private class AnonymizerHelper
+  {
+    private final Cache<String, String> cache = CacheBuilder.newBuilder()
+        .maximumSize(200)
+        .build();
+
+    public EventData anonymize(final EventData event) {
+      event.setUserId(anonymize(event.getUserId()));
+      event.setSessionId(anonymize(event.getSessionId()));
+      return event;
+    }
+
+    private String anonymize(final String text) {
+      if (text != null) {
+        String result = cache.getIfPresent(text);
+        if (result == null) {
+          result = anonymizer.anonymize(text);
+          cache.put(text, result);
+        }
+        return result;
+      }
+      return null;
+    }
+  }
+
   private File doExport(final boolean dropAfterExport) throws Exception {
     JournalStore journal = eventStore.getJournalStore();
 
@@ -95,6 +125,8 @@ public class EventExporterImpl
     ObjectMapper mapper = new ObjectMapper();
     mapper.enable(SerializationFeature.INDENT_OUTPUT);
     JsonFactory jsonFactory = mapper.getFactory();
+
+    AnonymizerHelper anonymizerHelper = new AnonymizerHelper();
 
     // TODO: Write out a metadata.json with common, format + version shits?
 
@@ -122,7 +154,7 @@ public class EventExporterImpl
             EventStore.SCHEMA_NAME, EventData.class, 0L, partition.getSize());
 
         while (events.hasNext()) {
-          generator.writeObject(anonymize(events.next()));
+          generator.writeObject(anonymizerHelper.anonymize(events.next()));
         }
         generator.flush();
 
@@ -139,23 +171,5 @@ public class EventExporterImpl
 
     log.info("Exported {} partitions to: {}", i, file);
     return file;
-  }
-
-  /**
-   * Anonymize sensitive event data.
-   */
-  private Object anonymize(final EventData event) {
-    event.setUserId(anonymize(event.getUserId()));
-    event.setSessionId(anonymize(event.getSessionId()));
-    return event;
-  }
-
-  private String anonymize(final String text) {
-    if (text != null) {
-      // TODO: Probably want to setup a tiny cache here to avoid re-anonymizing the same data over and over
-      // TODO: the 2 main datapoints to anonymize (userId an sessionId) are likely to reoccur many times
-      return anonymizer.anonymize(text);
-    }
-    return null;
   }
 }
