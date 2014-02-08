@@ -74,7 +74,7 @@ public class EventExporterImpl
   @Override
   public File export(final boolean dropAfterExport) throws Exception {
     try {
-      checkState(exportLock.tryLock(), "Already locked for export");
+      checkState(exportLock.tryLock(), "Export already in progress");
       return doExport(dropAfterExport);
     }
     finally {
