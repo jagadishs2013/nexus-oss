@@ -53,8 +53,6 @@ NX.define('Nexus.analytics.store.Events', {
       reader: NX.create('Ext.data.JsonReader', {
         root: 'events',
         totalProperty: 'total',
-        // FIXME: There is presently no 'id', timestamp+sequence is closest to an id
-        //idProperty: 'name',
         fields: [
           'type',
           'timestamp',
