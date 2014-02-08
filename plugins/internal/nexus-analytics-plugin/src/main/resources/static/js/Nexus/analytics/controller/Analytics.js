@@ -45,6 +45,9 @@ NX.define('Nexus.analytics.controller.Analytics', {
       },
       '#nx-analytics-view-events-button-submit': {
         'click': me.submitEvents
+      },
+      '#nx-analytics-view-settings-button-save': {
+        click: me.saveSettings
       }
     });
 
@@ -79,6 +82,17 @@ NX.define('Nexus.analytics.controller.Analytics', {
    */
   showMessage: function(message) {
     Nexus.messages.show('Analytics', message);
+  },
+
+  /**
+   * @private
+   */
+  saveSettings: function(button) {
+    var me = this;
+
+    // TODO:
+
+    me.showMessage('Settings saved');
   },
 
   /**

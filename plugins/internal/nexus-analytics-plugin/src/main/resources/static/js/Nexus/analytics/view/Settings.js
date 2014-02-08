@@ -33,7 +33,7 @@ NX.define('Nexus.analytics.view.Settings', {
   cls: 'nx-analytics-view-settings',
 
   border: false,
-  layout: 'fit',
+  //layout: 'fit',
 
   /**
    * @override
@@ -45,12 +45,35 @@ NX.define('Nexus.analytics.view.Settings', {
     Ext.apply(me, {
       items: [
         {
-          xtype: 'container',
+          xtype: 'form',
           items: [
             {
-              cls: 'nx-analytics-view-settings-description',
-              border: false,
-              html: 'TODO'
+              xtype: 'checkbox',
+              name: 'collection',
+              boxLabel: 'Enable analytics event collection'
+            },
+            {
+              xtype: 'checkbox',
+              name: 'autosubmit',
+              boxLabel: 'Enable automatic analytics event submission to Sonatype'
+            }
+          ],
+
+          buttonAlign: 'left',
+          buttons: [
+            {
+              xtype: 'button',
+              text: 'Save',
+              id: 'nx-analytics-view-settings-button-save',
+              formBind: true
+            },
+            {
+              xtype: 'link-button',
+              text: 'Discard',
+              formBind: false,
+              handler: function(button, event) {
+                button.up('form').getForm().reset();
+              }
             }
           ]
         }
