@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Iterator;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -102,19 +103,23 @@ public class EventExporterImpl
     }
 
     private String anonymize(final String text) {
-      if (text != null) {
-        String result = cache.getIfPresent(text);
-        if (result == null) {
-          result = anonymizer.anonymize(text);
-          cache.put(text, result);
-        }
-        return result;
+      if (text == null) {
+        return null;
       }
-      return null;
+
+      String result = cache.getIfPresent(text);
+      if (result == null) {
+        result = anonymizer.anonymize(text);
+        log.debug("Anonymized {} -> {}", text, result);
+        cache.put(text, result);
+      }
+      return result;
     }
   }
 
   private File doExport(final boolean dropAfterExport) throws Exception {
+    log.info("Exporting; dropAfterExport: {}", dropAfterExport);
+
     StopWatch watch = new StopWatch();
     watch.start();
 
@@ -132,9 +137,12 @@ public class EventExporterImpl
     JsonFactory jsonFactory = mapper.getFactory();
 
     AnonymizerHelper anonymizerHelper = new AnonymizerHelper();
+    long eventCount = 0;
+    int partitionCount = 0;
 
-    int i = 0;
     try (ZipOutputStream output = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(file)))) {
+      output.setLevel(Deflater.DEFAULT_COMPRESSION);
+
       // TODO: Write out a EventHeader to header.json
 
       // write each partition to its own file in the zip
@@ -145,11 +153,13 @@ public class EventExporterImpl
           // skip new open partitions, this is new data _after_ the export was requested
           break;
         }
+        partitionCount++;
 
         // new entry in the zip for each partition
-        ZipEntry entry = new ZipEntry("events-" + i++ + ".json");
+        ZipEntry entry = new ZipEntry("events-" + partitionCount + ".json");
         output.putNextEntry(entry);
-        log.info("Writing entry: {}, partition: {}", entry.getName(), partition.getPartitionId());
+        log.debug("Writing entry: {}, partition: {} w/{} records",
+            entry.getName(), partition.getPartitionId(), partition.getSize());
 
         JsonGenerator generator = jsonFactory.createGenerator(output);
         generator.writeStartArray();
@@ -159,6 +169,7 @@ public class EventExporterImpl
 
         while (events.hasNext()) {
           generator.writeObject(anonymizerHelper.anonymize(events.next()));
+          eventCount++;
         }
 
         if (dropAfterExport) {
@@ -172,7 +183,7 @@ public class EventExporterImpl
     }
     // TODO: Move file to support dir
 
-    log.info("Exported {} partitions to: {}, took: {}", i, file, watch);
+    log.info("Exported {} partitions, {} events to: {}, took: {}", partitionCount, eventCount, file, watch);
     return file;
   }
 }
