@@ -24,17 +24,17 @@ import com.google.common.collect.Maps;
 public class EventHeader
 {
   /**
-   * Format of the event stream.
+   * Format of the event stream (ex. zip-bundle/1)
    */
   private String format;
 
   /**
-   * The product which produced the events (ie. nexus-oss/2.8)
+   * The product which produced the events (ex. nexus-oss/2.8)
    */
   private String product;
 
   /**
-   * The organization the events belong to (ie. customer license identifier).
+   * The organization the events belong to (ex. customer license identifier).
    */
   private String organization;
 
