@@ -17,7 +17,7 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 
 /**
- * Container for analytics event data.
+ * Analytics event data.
  *
  * @since 2.8
  */
@@ -26,8 +26,6 @@ public class EventData
   private String type;
 
   private Long timestamp;
-
-  // TODO: hostId, orgId... these may be sent in surrounding data as these will always be the same?
 
   private String userId;
 
