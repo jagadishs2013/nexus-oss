@@ -13,17 +13,6 @@
 
 package org.sonatype.nexus.plugins.capabilities.internal.storage;
 
-import static org.sonatype.nexus.plugins.capabilities.CapabilityIdentity.capabilityIdentity;
-import static org.sonatype.nexus.plugins.capabilities.CapabilityType.capabilityType;
-import io.kazuki.v0.internal.v2schema.Attribute;
-import io.kazuki.v0.internal.v2schema.Schema;
-import io.kazuki.v0.store.KazukiException;
-import io.kazuki.v0.store.Key;
-import io.kazuki.v0.store.keyvalue.KeyValuePair;
-import io.kazuki.v0.store.keyvalue.KeyValueStore;
-import io.kazuki.v0.store.schema.SchemaStore;
-import io.kazuki.v0.store.schema.TypeValidation;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,8 +25,6 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonatype.nexus.plugins.capabilities.CapabilityIdentity;
 import org.sonatype.nexus.plugins.capabilities.internal.config.persistence.CCapability;
 import org.sonatype.nexus.plugins.capabilities.internal.config.persistence.CCapabilityProperty;
@@ -48,6 +35,18 @@ import com.google.common.base.Equivalence;
 import com.google.common.base.Predicate;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import io.kazuki.v0.internal.v2schema.Attribute;
+import io.kazuki.v0.internal.v2schema.Schema;
+import io.kazuki.v0.store.KazukiException;
+import io.kazuki.v0.store.Key;
+import io.kazuki.v0.store.keyvalue.KeyValuePair;
+import io.kazuki.v0.store.keyvalue.KeyValueStore;
+import io.kazuki.v0.store.schema.SchemaStore;
+import io.kazuki.v0.store.schema.TypeValidation;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sonatype.nexus.plugins.capabilities.CapabilityIdentity.capabilityIdentity;
+import static org.sonatype.nexus.plugins.capabilities.CapabilityType.capabilityType;
 
 /**
  * Handles persistence of capabilities configuration.
@@ -59,33 +58,34 @@ public class DefaultCapabilityStorage
     implements CapabilityStorage
 {
   public static final String CAPABILITY_SCHEMA = "capability";
-  private final Logger log = LoggerFactory.getLogger(getClass());
-  private final KeyValueStore keyValueStore; 
+
+  private final KeyValueStore keyValueStore;
+
   private final SchemaStore schemaStore;
 
-  @Inject
-  public DefaultCapabilityStorage(@Named("nexuscapability") KeyValueStore keyValueStore, @Named("nexuscapability") SchemaStore schemaStore) {
-    this.keyValueStore = keyValueStore;
-    this.schemaStore = schemaStore;
-  }
-  
   private final ReentrantLock lock = new ReentrantLock();
+
+  @Inject
+  public DefaultCapabilityStorage(final @Named("nexuscapability") KeyValueStore keyValueStore,
+                                  final @Named("nexuscapability") SchemaStore schemaStore)
+  {
+    this.keyValueStore = checkNotNull(keyValueStore);
+    this.schemaStore = checkNotNull(schemaStore);
+  }
 
   @Override
   protected void doStart() throws Exception {
     if (schemaStore.retrieveSchema(CAPABILITY_SCHEMA) == null) {
-      Schema eventSchema = new Schema(Collections.<Attribute>emptyList());
-      
+      Schema schema = new Schema(Collections.<Attribute>emptyList());
+
       log.info("Creating schema for 'capability' type");
 
-      schemaStore.createSchema(CAPABILITY_SCHEMA, eventSchema);
+      schemaStore.createSchema(CAPABILITY_SCHEMA, schema);
     }
   }
 
   @Override
-  public void add(final CapabilityStorageItem item)
-      throws IOException
-  {
+  public void add(final CapabilityStorageItem item) throws IOException {
     try {
       lock.lock();
 
@@ -96,11 +96,12 @@ public class DefaultCapabilityStorage
           throw new IllegalArgumentException("already exists");
         }
       }
-      
+
       log.info("Adding capability {}", capability);
 
       keyValueStore.create(CAPABILITY_SCHEMA, CCapability.class, capability, TypeValidation.STRICT);
-    } catch (KazukiException e) {
+    }
+    catch (KazukiException e) {
       throw Throwables.propagate(e);
     }
     finally {
@@ -109,9 +110,7 @@ public class DefaultCapabilityStorage
   }
 
   @Override
-  public boolean update(final CapabilityStorageItem item)
-      throws IOException
-  {
+  public boolean update(final CapabilityStorageItem item) throws IOException {
     try {
       lock.lock();
 
@@ -122,29 +121,32 @@ public class DefaultCapabilityStorage
       Key found = null;
 
       Predicate<Object> equiv = Equivalence.equals().equivalentTo(capability.getId());
-      
-      for (KeyValuePair<CCapability> kvEntry : keyValueStore.iterators().entries(CAPABILITY_SCHEMA, CCapability.class)) {
+
+      for (KeyValuePair<CCapability> kvEntry : keyValueStore.iterators()
+          .entries(CAPABILITY_SCHEMA, CCapability.class)) {
         if (equiv.equals(kvEntry.getValue().getId())) {
           found = kvEntry.getKey();
           break;
         }
       }
-      
+
       if (found == null) {
         log.info("Update - capability not found {}", capability);
         return false;
       }
 
       boolean result = keyValueStore.update(found, CCapability.class, capability);
-      
+
       if (result) {
         log.info("Updated capability {}", capability);
-      } else {
+      }
+      else {
         log.info("Update failed - capability not updated {}", capability);
       }
-      
+
       return result;
-    } catch (KazukiException e) {
+    }
+    catch (KazukiException e) {
       throw Throwables.propagate(e);
     }
     finally {
@@ -153,9 +155,7 @@ public class DefaultCapabilityStorage
   }
 
   @Override
-  public boolean remove(final CapabilityIdentity id)
-      throws IOException
-  {
+  public boolean remove(final CapabilityIdentity id) throws IOException {
     try {
       lock.lock();
 
@@ -163,7 +163,7 @@ public class DefaultCapabilityStorage
 
       Iterator<CCapability> iter = keyValueStore.iterators().iterator(CAPABILITY_SCHEMA, CCapability.class);
       Predicate<Object> equiv = Equivalence.equals().equivalentTo(id.toString());
-      
+
       while (iter.hasNext()) {
         final CCapability current = iter.next();
 
@@ -185,9 +185,7 @@ public class DefaultCapabilityStorage
   }
 
   @Override
-  public Collection<CapabilityStorageItem> getAll()
-      throws IOException
-  {
+  public Collection<CapabilityStorageItem> getAll() throws IOException {
     Collection<CapabilityStorageItem> items = Lists.newArrayList();
 
     for (CCapability capability : keyValueStore.iterators().values(CAPABILITY_SCHEMA, CCapability.class)) {
@@ -202,7 +200,7 @@ public class DefaultCapabilityStorage
   public Configuration load() throws IOException {
     Configuration config = new Configuration();
     config.setVersion(Configuration.MODEL_VERSION);
-    
+
     for (CCapability capability : keyValueStore.iterators().values(CAPABILITY_SCHEMA, CCapability.class)) {
       config.addCapability(capability);
     }
