@@ -80,8 +80,13 @@ NX.define('Nexus.analytics.view.Events', {
       },
 
       store: store,
-      stripeRows: true,
 
+      viewConfig: {
+        emptyText: 'No analytics events',
+        deferEmptyText: false
+      },
+
+      stripeRows: true,
       autoExpandColumn: 'attributes',
 
       colModel: NX.create('Ext.grid.ColumnModel', {
