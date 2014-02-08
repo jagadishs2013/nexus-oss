@@ -135,7 +135,7 @@ public class EventExporterImpl
 
     int i = 0;
     try (ZipOutputStream output = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(file)))) {
-      // TODO: Write out a header.json with common (orgId, hostId, product info), format + version details
+      // TODO: Write out a EventHeader to header.json
 
       // write each partition to its own file in the zip
       Iterator<PartitionInfoSnapshot> partitions = journal.getAllPartitions();
