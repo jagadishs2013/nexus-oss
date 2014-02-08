@@ -168,8 +168,6 @@ public class EventExporterImpl
         generator.writeEndArray();
         generator.flush();
         output.closeEntry();
-
-        watch.split();
       }
     }
     // TODO: Move file to support dir
