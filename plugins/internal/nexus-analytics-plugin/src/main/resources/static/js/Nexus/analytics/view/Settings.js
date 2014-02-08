@@ -46,6 +46,7 @@ NX.define('Nexus.analytics.view.Settings', {
       items: [
         {
           xtype: 'form',
+          id: 'nx-analytics-view-settings-form',
           items: [
             {
               xtype: 'checkbox',

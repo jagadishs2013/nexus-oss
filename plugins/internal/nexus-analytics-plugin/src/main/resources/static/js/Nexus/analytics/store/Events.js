@@ -32,7 +32,7 @@ NX.define('Nexus.analytics.store.Events', {
     /**
      * @public
      */
-    PAGE_SIZE: 500
+    PAGE_SIZE: 250
   },
 
   /**
