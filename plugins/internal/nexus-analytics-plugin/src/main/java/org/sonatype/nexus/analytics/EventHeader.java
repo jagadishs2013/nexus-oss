@@ -24,7 +24,7 @@ import com.google.common.collect.Maps;
 public class EventHeader
 {
   /**
-   * Format of the event stream (ie. zip-bundle/1)
+   * Format of the event stream.
    */
   private String format;
 
@@ -80,8 +80,8 @@ public class EventHeader
     this.node = node;
   }
 
-  public void setAttributes(final Map<String, String> attributes) {
-    this.attributes = attributes;
+  public Map<String, String> getAttributes() {
+    return attributes;
   }
 
   @Override
