@@ -13,6 +13,7 @@
 
 package org.sonatype.nexus.analytics.internal;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Iterator;
@@ -39,6 +40,7 @@ import com.google.common.cache.CacheBuilder;
 import io.kazuki.v0.store.journal.JournalStore;
 import io.kazuki.v0.store.journal.PartitionInfo;
 import io.kazuki.v0.store.journal.PartitionInfoSnapshot;
+import org.apache.commons.lang.time.StopWatch;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -113,6 +115,9 @@ public class EventExporterImpl
   }
 
   private File doExport(final boolean dropAfterExport) throws Exception {
+    StopWatch watch = new StopWatch();
+    watch.start();
+
     JournalStore journal = eventStore.getJournalStore();
 
     // Close the current partition, so that any new events are separate from those that exist already
@@ -129,7 +134,7 @@ public class EventExporterImpl
     AnonymizerHelper anonymizerHelper = new AnonymizerHelper();
 
     int i = 0;
-    try (ZipOutputStream output = new ZipOutputStream(new FileOutputStream(file))) {
+    try (ZipOutputStream output = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(file)))) {
       // TODO: Write out a header.json with common (orgId, hostId, product info), format + version details
 
       // write each partition to its own file in the zip
@@ -155,7 +160,6 @@ public class EventExporterImpl
         while (events.hasNext()) {
           generator.writeObject(anonymizerHelper.anonymize(events.next()));
         }
-        generator.flush();
 
         if (dropAfterExport) {
           journal.dropPartition(partition.getPartitionId());
@@ -164,11 +168,13 @@ public class EventExporterImpl
         generator.writeEndArray();
         generator.flush();
         output.closeEntry();
+
+        watch.split();
       }
     }
     // TODO: Move file to support dir
 
-    log.info("Exported {} partitions to: {}", i, file);
+    log.info("Exported {} partitions to: {}, took: {}", i, file, watch);
     return file;
   }
 }
