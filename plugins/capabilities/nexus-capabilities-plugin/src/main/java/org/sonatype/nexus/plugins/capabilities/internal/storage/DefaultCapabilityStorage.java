@@ -13,17 +13,22 @@
 
 package org.sonatype.nexus.plugins.capabilities.internal.storage;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
+import static org.sonatype.nexus.plugins.capabilities.CapabilityIdentity.capabilityIdentity;
+import static org.sonatype.nexus.plugins.capabilities.CapabilityType.capabilityType;
+import io.kazuki.v0.internal.v2schema.Attribute;
+import io.kazuki.v0.internal.v2schema.Schema;
+import io.kazuki.v0.store.KazukiException;
+import io.kazuki.v0.store.Key;
+import io.kazuki.v0.store.keyvalue.KeyValuePair;
+import io.kazuki.v0.store.keyvalue.KeyValueStore;
+import io.kazuki.v0.store.schema.SchemaStore;
+import io.kazuki.v0.store.schema.TypeValidation;
+
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -31,24 +36,18 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonatype.nexus.plugins.capabilities.CapabilityIdentity;
 import org.sonatype.nexus.plugins.capabilities.internal.config.persistence.CCapability;
 import org.sonatype.nexus.plugins.capabilities.internal.config.persistence.CCapabilityProperty;
 import org.sonatype.nexus.plugins.capabilities.internal.config.persistence.Configuration;
-import org.sonatype.nexus.plugins.capabilities.internal.config.persistence.io.xpp3.NexusCapabilitiesConfigurationXpp3Reader;
-import org.sonatype.nexus.plugins.capabilities.internal.config.persistence.io.xpp3.NexusCapabilitiesConfigurationXpp3Writer;
-import org.sonatype.sisu.goodies.common.ComponentSupport;
-import org.sonatype.sisu.goodies.common.io.FileReplacer;
-import org.sonatype.sisu.goodies.common.io.FileReplacer.ContentWriter;
+import org.sonatype.sisu.goodies.lifecycle.LifecycleSupport;
 
+import com.google.common.base.Equivalence;
+import com.google.common.base.Predicate;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import org.codehaus.plexus.util.StringUtils;
-import org.codehaus.plexus.util.xml.Xpp3DomBuilder;
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
-
-import static org.sonatype.nexus.plugins.capabilities.CapabilityIdentity.capabilityIdentity;
-import static org.sonatype.nexus.plugins.capabilities.CapabilityType.capabilityType;
 
 /**
  * Handles persistence of capabilities configuration.
@@ -56,26 +55,31 @@ import static org.sonatype.nexus.plugins.capabilities.CapabilityType.capabilityT
 @Singleton
 @Named
 public class DefaultCapabilityStorage
-    extends ComponentSupport
+    extends LifecycleSupport
     implements CapabilityStorage
 {
-
-  private final File configurationFile;
-
-  private final ReentrantLock lock = new ReentrantLock();
-
-  private Configuration configuration;
+  public static final String CAPABILITY_SCHEMA = "capability";
+  private final Logger log = LoggerFactory.getLogger(getClass());
+  private final KeyValueStore keyValueStore; 
+  private final SchemaStore schemaStore;
 
   @Inject
-  public DefaultCapabilityStorage(final ApplicationConfiguration applicationConfiguration) {
-    configurationFile = new File(applicationConfiguration.getConfigurationDirectory(), "capabilities.xml");
+  public DefaultCapabilityStorage(@Named("nexuscapability") KeyValueStore keyValueStore, @Named("nexuscapability") SchemaStore schemaStore) {
+    this.keyValueStore = keyValueStore;
+    this.schemaStore = schemaStore;
   }
+  
+  private final ReentrantLock lock = new ReentrantLock();
 
-  /**
-   * @since 2.7
-   */
-  public File getConfigurationFile() {
-    return configurationFile;
+  @Override
+  protected void doStart() throws Exception {
+    if (schemaStore.retrieveSchema(CAPABILITY_SCHEMA) == null) {
+      Schema eventSchema = new Schema(Collections.<Attribute>emptyList());
+      
+      log.info("Creating schema for 'capability' type");
+
+      schemaStore.createSchema(CAPABILITY_SCHEMA, eventSchema);
+    }
   }
 
   @Override
@@ -85,8 +89,19 @@ public class DefaultCapabilityStorage
     try {
       lock.lock();
 
-      load().addCapability(asCCapability(item));
-      save();
+      CCapability capability = asCCapability(item);
+
+      for (CCapability current : keyValueStore.iterators().values(CAPABILITY_SCHEMA, CCapability.class)) {
+        if (current.getId() != null && current.getId().equals(capability.getId())) {
+          throw new IllegalArgumentException("already exists");
+        }
+      }
+      
+      log.info("Adding capability {}", capability);
+
+      keyValueStore.create(CAPABILITY_SCHEMA, CCapability.class, capability, TypeValidation.STRICT);
+    } catch (KazukiException e) {
+      throw Throwables.propagate(e);
     }
     finally {
       lock.unlock();
@@ -102,15 +117,35 @@ public class DefaultCapabilityStorage
 
       final CCapability capability = asCCapability(item);
 
-      final CCapability stored = getInternal(capability.getId());
+      log.info("Updating capability {}", capability);
 
-      if (stored == null) {
+      Key found = null;
+
+      Predicate<Object> equiv = Equivalence.equals().equivalentTo(capability.getId());
+      
+      for (KeyValuePair<CCapability> kvEntry : keyValueStore.iterators().entries(CAPABILITY_SCHEMA, CCapability.class)) {
+        if (equiv.equals(kvEntry.getValue().getId())) {
+          found = kvEntry.getKey();
+          break;
+        }
+      }
+      
+      if (found == null) {
+        log.info("Update - capability not found {}", capability);
         return false;
       }
-      load().removeCapability(stored);
-      load().addCapability(capability);
-      save();
-      return true;
+
+      boolean result = keyValueStore.update(found, CCapability.class, capability);
+      
+      if (result) {
+        log.info("Updated capability {}", capability);
+      } else {
+        log.info("Update failed - capability not updated {}", capability);
+      }
+      
+      return result;
+    } catch (KazukiException e) {
+      throw Throwables.propagate(e);
     }
     finally {
       lock.unlock();
@@ -124,13 +159,25 @@ public class DefaultCapabilityStorage
     try {
       lock.lock();
 
-      final CCapability stored = getInternal(id.toString());
-      if (stored == null) {
-        return false;
+      log.info("Removing capability {}", id);
+
+      Iterator<CCapability> iter = keyValueStore.iterators().iterator(CAPABILITY_SCHEMA, CCapability.class);
+      Predicate<Object> equiv = Equivalence.equals().equivalentTo(id.toString());
+      
+      while (iter.hasNext()) {
+        final CCapability current = iter.next();
+
+        if (equiv.equals(current.getId())) {
+          iter.remove();
+          log.debug("Removed capability {}", id);
+
+          return true;
+        }
       }
-      load().removeCapability(stored);
-      save();
-      return true;
+
+      log.info("Remove failed - capability {}", id);
+
+      return false;
     }
     finally {
       lock.unlock();
@@ -142,91 +189,27 @@ public class DefaultCapabilityStorage
       throws IOException
   {
     Collection<CapabilityStorageItem> items = Lists.newArrayList();
-    final List<CCapability> capabilities = load().getCapabilities();
-    if (capabilities != null) {
-      for (final CCapability capability : capabilities) {
-        items.add(asCapabilityStorageItem(capability));
-      }
+
+    for (CCapability capability : keyValueStore.iterators().values(CAPABILITY_SCHEMA, CCapability.class)) {
+      items.add(asCapabilityStorageItem(capability));
     }
+
+    log.info("Get all capabilities {}", items);
+
     return items;
   }
 
-  private Configuration load()
-      throws IOException
-  {
-    if (configuration != null) {
-      return configuration;
+  public Configuration load() throws IOException {
+    Configuration config = new Configuration();
+    config.setVersion(Configuration.MODEL_VERSION);
+    
+    for (CCapability capability : keyValueStore.iterators().values(CAPABILITY_SCHEMA, CCapability.class)) {
+      config.addCapability(capability);
     }
 
-    lock.lock();
+    log.info("Loaded capabilities {}", config.getCapabilities());
 
-    try (Reader r = new FileReader(configurationFile);
-         FileInputStream is = new FileInputStream(configurationFile);
-         Reader fr = new InputStreamReader(is)) {
-
-      Xpp3DomBuilder.build(r);
-      configuration = new NexusCapabilitiesConfigurationXpp3Reader().read(fr);
-    }
-    catch (final FileNotFoundException e) {
-      // This is ok, may not exist first time around
-      configuration = new Configuration();
-
-      configuration.setVersion(Configuration.MODEL_VERSION);
-
-      save();
-    }
-    catch (final IOException e) {
-      log.error("IOException while retrieving configuration file", e);
-    }
-    catch (final XmlPullParserException e) {
-      log.error("Invalid XML Configuration", e);
-    }
-    finally {
-      lock.unlock();
-    }
-
-    return configuration;
-  }
-
-  private void save()
-      throws IOException
-  {
-    lock.lock();
-
-    log.debug("Saving configuration: {}", configurationFile);
-    try {
-      final FileReplacer fileReplacer = new FileReplacer(configurationFile);
-      // we save this file many times, don't litter backups
-      fileReplacer.setDeleteBackupFile(true);
-      fileReplacer.replace(new ContentWriter()
-      {
-        @Override
-        public void write(final BufferedOutputStream output)
-            throws IOException
-        {
-          new NexusCapabilitiesConfigurationXpp3Writer().write(output, configuration);
-        }
-      });
-    }
-    finally {
-      lock.unlock();
-    }
-  }
-
-  private CCapability getInternal(final String capabilityId)
-      throws IOException
-  {
-    if (StringUtils.isEmpty(capabilityId)) {
-      return null;
-    }
-
-    for (final CCapability capability : load().getCapabilities()) {
-      if (capabilityId.equals(capability.getId())) {
-        return capability;
-      }
-    }
-
-    return null;
+    return config;
   }
 
   private CapabilityStorageItem asCapabilityStorageItem(final CCapability capability) {

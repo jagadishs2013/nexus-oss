@@ -17,8 +17,9 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.sonatype.nexus.plugins.capabilities.CapabilityIdentity;
+import org.sonatype.sisu.goodies.lifecycle.Lifecycle;
 
-public interface CapabilityStorage
+public interface CapabilityStorage extends Lifecycle
 {
 
   /**

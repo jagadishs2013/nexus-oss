@@ -50,14 +50,17 @@ public class SupportBundleCustomizerImpl
    */
   @Override
   public void customize(final SupportBundle supportBundle) {
-    File file = capabilityStorage.getConfigurationFile();
-    if (!file.exists()) {
-      log.debug("skipping non-existent file: {}", file);
-    }
-
-    // capabilities.xml
-    supportBundle.add(
-        new FileContentSourceSupport(Type.CONFIG, "work/conf/" + file.getName(), file)
-    );
+//
+// TODO : implement for Kazuki/H2 store
+//
+//    File file = capabilityStorage.getConfigurationFile();
+//    if (!file.exists()) {
+//      log.debug("skipping non-existent file: {}", file);
+//    }
+//
+//    // capabilities.xml
+//    supportBundle.add(
+//        new FileContentSourceSupport(Type.CONFIG, "work/conf/" + file.getName(), file)
+//    );
   }
 }
