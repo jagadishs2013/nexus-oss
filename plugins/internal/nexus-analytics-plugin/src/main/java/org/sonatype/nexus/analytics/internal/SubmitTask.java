@@ -41,6 +41,8 @@ public class SubmitTask
     return "Submitting analytics events";
   }
 
+  // NOTE: Perhaps want to use same task for manual+auto so that only 1 can run at one time?
+
   @Override
   protected void execute() throws Exception {
     // HACK: for now simply export with drop

@@ -59,12 +59,14 @@ public class AutoSubmitCapability
 
   @Override
   protected void onActivate(final AutoSubmitCapabilityConfiguration config) throws Exception {
-    // TODO
+    // TODO: ensure auto-submit task exists
+    // TODO: sanity check existing task is not manual?  Perhaps only bitch?
+    // TODO: enable task
   }
 
   @Override
   protected void onPassivate(final AutoSubmitCapabilityConfiguration config) throws Exception {
-    // TODO
+    // TODO: disable auto-submit task
   }
 
   @Override

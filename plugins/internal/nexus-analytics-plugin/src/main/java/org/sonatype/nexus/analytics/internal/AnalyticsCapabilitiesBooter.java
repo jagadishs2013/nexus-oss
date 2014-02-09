@@ -53,6 +53,9 @@ public class AnalyticsCapabilitiesBooter
             CollectionCapabilityConfiguration.SALT, randomSalt()
         )
     );
+
+    // automatically add auto-submit capability (disabled)
+    maybeAddCapability(registry, AutoSubmitCapabilityDescriptor.TYPE, false, null, null);
   }
 
   /**
