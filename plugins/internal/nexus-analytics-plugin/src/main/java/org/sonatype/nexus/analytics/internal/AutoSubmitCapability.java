@@ -93,7 +93,7 @@ public class AutoSubmitCapability
     if (tasks.isEmpty()) {
       AutoSubmitTask task = taskFactory.get();
       // default run at 1AM daily
-      Schedule schedule = new CronSchedule("0 1 * * * ?");
+      Schedule schedule = new CronSchedule("0 0 1 * * ?");
       scheduled = scheduler.schedule("Automatically submit analytics events", task, schedule);
       log.debug("Scheduled new task: {}", scheduled);
     }
