@@ -25,7 +25,8 @@ import org.sonatype.nexus.capability.support.CapabilitySupport;
 import org.sonatype.nexus.plugins.capabilities.Condition;
 import org.sonatype.nexus.scheduling.NexusScheduler;
 import org.sonatype.scheduling.ScheduledTask;
-import org.sonatype.scheduling.schedules.ManualRunSchedule;
+import org.sonatype.scheduling.schedules.CronSchedule;
+import org.sonatype.scheduling.schedules.Schedule;
 import org.sonatype.sisu.goodies.i18n.I18N;
 import org.sonatype.sisu.goodies.i18n.MessageBundle;
 
@@ -91,10 +92,9 @@ public class AutoSubmitCapability
     List<ScheduledTask<?>> tasks = tasksForTypeId(AutoSubmitTask.ID);
     if (tasks.isEmpty()) {
       AutoSubmitTask task = taskFactory.get();
-      scheduled = scheduler.schedule(
-          "Automatically submit analytics events",
-          task,
-          new ManualRunSchedule()); // FIXME: Set default schedule to daily
+      // default run at 1AM daily
+      Schedule schedule = new CronSchedule("0 0 1 * * ?");
+      scheduled = scheduler.schedule("Automatically submit analytics events", task, schedule);
       log.debug("Scheduled new task: {}", scheduled);
     }
     else {
