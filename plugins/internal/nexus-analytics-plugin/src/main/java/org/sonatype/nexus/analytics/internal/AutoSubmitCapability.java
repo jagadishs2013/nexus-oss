@@ -12,14 +12,24 @@
  */
 package org.sonatype.nexus.analytics.internal;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
+import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 
 import org.sonatype.nexus.capability.support.CapabilitySupport;
 import org.sonatype.nexus.plugins.capabilities.Condition;
+import org.sonatype.nexus.scheduling.NexusScheduler;
+import org.sonatype.scheduling.ScheduledTask;
+import org.sonatype.scheduling.schedules.ManualRunSchedule;
 import org.sonatype.sisu.goodies.i18n.I18N;
 import org.sonatype.sisu.goodies.i18n.MessageBundle;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Analytics automatic submission capability.
@@ -43,6 +53,20 @@ public class AutoSubmitCapability
 
   private static final Messages messages = I18N.create(Messages.class);
 
+  private final NexusScheduler scheduler;
+
+  private final Provider<AutoSubmitTask> taskFactory;
+
+  private String taskId;
+
+  @Inject
+  public AutoSubmitCapability(final NexusScheduler scheduler,
+                              final Provider<AutoSubmitTask> taskFactory)
+  {
+    this.scheduler = checkNotNull(scheduler);
+    this.taskFactory = checkNotNull(taskFactory);
+  }
+
   @Override
   protected AutoSubmitCapabilityConfiguration createConfig(final Map<String, String> properties) throws Exception {
     return new AutoSubmitCapabilityConfiguration(properties);
@@ -59,14 +83,57 @@ public class AutoSubmitCapability
 
   @Override
   protected void onActivate(final AutoSubmitCapabilityConfiguration config) throws Exception {
-    // TODO: ensure auto-submit task exists
-    // TODO: sanity check existing task is not manual?  Perhaps only bitch?
-    // TODO: enable task
+    ScheduledTask scheduled;
+
+    // automatically create task if needed
+    List<ScheduledTask<?>> tasks = tasksForTypeId(AutoSubmitTask.ID);
+    if (tasks.isEmpty()) {
+      AutoSubmitTask task = taskFactory.get();
+      scheduled = scheduler.schedule(
+          "Automatically submit analytics events",
+          task,
+          new ManualRunSchedule()); // FIXME: Set default schedule to daily
+      log.debug("Scheduled new task: {}", scheduled);
+    }
+    else {
+      // else reference existing task
+      // TODO: Sort out multiple tasks
+      scheduled = tasks.get(0);
+      log.debug("Resolved existing task: {}", scheduled);
+    }
+
+    // HACK: Find better way to manage ref
+    taskId = scheduled.getId();
+    log.debug("Task ID: {}", taskId);
+
+    // TODO: Complain if schedule is manual?
+
+    // enable task and save
+    scheduled.setEnabled(true);
+    scheduler.updateSchedule(scheduled);
+  }
+
+  /**
+   * Helper to get all tasks for a given scheduled task type-id.
+   */
+  private List<ScheduledTask<?>> tasksForTypeId(final String typeId) {
+    for (Entry<String, List<ScheduledTask<?>>> entry : scheduler.getActiveTasks().entrySet()) {
+      if (typeId.equals(entry.getKey())) {
+        return entry.getValue();
+      }
+    }
+    return Collections.emptyList();
   }
 
   @Override
   protected void onPassivate(final AutoSubmitCapabilityConfiguration config) throws Exception {
-    // TODO: disable auto-submit task
+    ScheduledTask scheduled = scheduler.getTaskById(taskId);
+
+    // TODO: Sort out handling stopping task if its running?
+
+    // disable the task
+    scheduled.setEnabled(false);
+    scheduler.updateSchedule(scheduled);
   }
 
   @Override
