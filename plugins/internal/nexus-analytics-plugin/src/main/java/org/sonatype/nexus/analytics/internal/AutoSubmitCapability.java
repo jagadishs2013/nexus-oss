@@ -83,6 +83,8 @@ public class AutoSubmitCapability
 
   @Override
   protected void onActivate(final AutoSubmitCapabilityConfiguration config) throws Exception {
+    // TODO: Use taskId cache if it exists to find the task
+
     ScheduledTask scheduled;
 
     // automatically create task if needed
