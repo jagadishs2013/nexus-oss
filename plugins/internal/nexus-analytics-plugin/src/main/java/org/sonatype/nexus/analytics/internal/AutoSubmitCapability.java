@@ -145,6 +145,7 @@ public class AutoSubmitCapability
     ScheduledTask task = getTask();
     task.setEnabled(true);
     scheduler.updateSchedule(task);
+    log.info("Automatic submission enabled");
   }
 
   @Override
@@ -153,6 +154,7 @@ public class AutoSubmitCapability
     ScheduledTask task = getTask();
     task.setEnabled(false);
     scheduler.updateSchedule(task);
+    log.info("Automatic submission disabled");
   }
 
   @Override

@@ -77,12 +77,14 @@ public class CollectionCapability
     store.start();
     anonymizer.setSalt(config.getSaltBytes());
     recorder.setEnabled(true);
+    log.info("Collection enabled");
   }
 
   @Override
   protected void onPassivate(final CollectionCapabilityConfiguration config) throws Exception {
     recorder.setEnabled(false);
     store.stop();
+    log.info("Collection disabled");
   }
 
   @Override
