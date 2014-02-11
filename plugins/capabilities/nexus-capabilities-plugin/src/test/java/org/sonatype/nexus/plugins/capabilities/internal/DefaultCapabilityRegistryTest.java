@@ -29,6 +29,7 @@ import org.sonatype.nexus.plugins.capabilities.CapabilityDescriptorRegistry;
 import org.sonatype.nexus.plugins.capabilities.CapabilityEvent;
 import org.sonatype.nexus.plugins.capabilities.CapabilityFactory;
 import org.sonatype.nexus.plugins.capabilities.CapabilityFactoryRegistry;
+import org.sonatype.nexus.plugins.capabilities.CapabilityIdentity;
 import org.sonatype.nexus.plugins.capabilities.CapabilityNotFoundException;
 import org.sonatype.nexus.plugins.capabilities.CapabilityReference;
 import org.sonatype.nexus.plugins.capabilities.CapabilityType;
@@ -41,7 +42,6 @@ import org.sonatype.sisu.litmus.testsupport.TestSupport;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -127,6 +127,16 @@ public class DefaultCapabilityRegistryTest
     final ValidityConditionHandlerFactory vchf = mock(ValidityConditionHandlerFactory.class);
     when(vchf.create(Mockito.<DefaultCapabilityReference>any())).thenReturn(
         mock(ValidityConditionHandler.class)
+    );
+
+    when(capabilityStorage.add(Mockito.<CapabilityStorageItem>any())).thenAnswer(
+        new Answer<CapabilityIdentity>()
+        {
+          @Override
+          public CapabilityIdentity answer(final InvocationOnMock invocationOnMock) throws Throwable {
+            return capabilityIdentity(String.valueOf(System.currentTimeMillis()));
+          }
+        }
     );
 
     underTest = new DefaultCapabilityRegistry(
@@ -262,7 +272,7 @@ public class DefaultCapabilityRegistryTest
     oldProps.put("p2", "v2");
 
     final CapabilityStorageItem item = new CapabilityStorageItem(
-        0, CAPABILITY_TYPE, true, null, oldProps
+        0, CAPABILITY_TYPE.toString(), true, null, oldProps
     );
     when(capabilityStorage.getAll()).thenReturn(ImmutableMap.of(capabilityIdentity("foo"), item));
 
@@ -292,7 +302,7 @@ public class DefaultCapabilityRegistryTest
     oldProps.put("p2", "v2");
 
     final CapabilityStorageItem item = new CapabilityStorageItem(
-        0, CAPABILITY_TYPE, true, null, oldProps
+        0, CAPABILITY_TYPE.toString(), true, null, oldProps
     );
     when(capabilityStorage.getAll()).thenReturn(ImmutableMap.of(capabilityIdentity("foo"), item));
 
@@ -312,7 +322,7 @@ public class DefaultCapabilityRegistryTest
     verify(descriptor, atLeastOnce()).version();
     verify(descriptor).convert(oldProps, 0);
     final ArgumentCaptor<CapabilityStorageItem> captor = ArgumentCaptor.forClass(CapabilityStorageItem.class);
-    verify(capabilityStorage).update(capabilityIdentity("foo"), captor.capture());
+    verify(capabilityStorage).update(Mockito.eq(capabilityIdentity("foo")), captor.capture());
     assertThat(captor.getValue(), is(notNullValue()));
 
     final Map<String, String> actualNewProps = captor.getValue().properties();
@@ -333,7 +343,7 @@ public class DefaultCapabilityRegistryTest
     oldProps.put("p2", "v2");
 
     final CapabilityStorageItem item = new CapabilityStorageItem(
-        0, CAPABILITY_TYPE, true, null, oldProps
+        0, CAPABILITY_TYPE.toString(), true, null, oldProps
     );
     when(capabilityStorage.getAll()).thenReturn(ImmutableMap.of(capabilityIdentity("foo"), item));
 
@@ -363,7 +373,7 @@ public class DefaultCapabilityRegistryTest
       throws Exception
   {
     final CapabilityStorageItem item = new CapabilityStorageItem(
-        0, CAPABILITY_TYPE, true, null, null
+        0, CAPABILITY_TYPE.toString(), true, null, null
     );
     when(capabilityStorage.getAll()).thenReturn(ImmutableMap.of(capabilityIdentity("foo"), item));
 
@@ -414,7 +424,7 @@ public class DefaultCapabilityRegistryTest
     properties.put("foo", passwordHelper.encrypt("bar"));
 
     final CapabilityStorageItem item = new CapabilityStorageItem(
-        0, CAPABILITY_TYPE, true, null, properties
+        0, CAPABILITY_TYPE.toString(), true, null, properties
     );
     when(capabilityStorage.getAll()).thenReturn(ImmutableMap.of(capabilityIdentity("foo"), item));
 

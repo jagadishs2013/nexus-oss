@@ -15,33 +15,27 @@ package org.sonatype.nexus.plugins.capabilities.internal.storage;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.locks.ReentrantLock;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.sonatype.nexus.plugins.capabilities.CapabilityIdentity;
-import org.sonatype.nexus.plugins.capabilities.internal.config.persistence.CCapability;
-import org.sonatype.nexus.plugins.capabilities.internal.config.persistence.CCapabilityProperty;
-import org.sonatype.nexus.plugins.capabilities.internal.config.persistence.Configuration;
 import org.sonatype.sisu.goodies.lifecycle.LifecycleSupport;
 
-import com.google.common.base.Throwables;
-
+import com.google.common.collect.Maps;
 import io.kazuki.v0.internal.v2schema.Attribute;
 import io.kazuki.v0.internal.v2schema.Schema;
 import io.kazuki.v0.store.KazukiException;
 import io.kazuki.v0.store.Key;
+import io.kazuki.v0.store.keyvalue.KeyValueIterable;
 import io.kazuki.v0.store.keyvalue.KeyValuePair;
 import io.kazuki.v0.store.keyvalue.KeyValueStore;
 import io.kazuki.v0.store.schema.SchemaStore;
 import io.kazuki.v0.store.schema.TypeValidation;
+
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sonatype.nexus.plugins.capabilities.CapabilityType.capabilityType;
 
 /**
  * Handles persistence of capabilities configuration.
@@ -57,8 +51,6 @@ public class DefaultCapabilityStorage
   private final KeyValueStore keyValueStore;
 
   private final SchemaStore schemaStore;
-
-  private final ReentrantLock lock = new ReentrantLock();
 
   @Inject
   public DefaultCapabilityStorage(final @Named("nexuscapability") KeyValueStore keyValueStore,
@@ -82,146 +74,55 @@ public class DefaultCapabilityStorage
   @Override
   public CapabilityIdentity add(final CapabilityStorageItem item) throws IOException {
     try {
-      lock.lock();
-
-      CCapability capability = asCCapability(item);
-
-      log.info("Adding capability {}", capability);
-
-      Key newKey = keyValueStore.create(CAPABILITY_SCHEMA, CCapability.class, capability, TypeValidation.STRICT);
-      CapabilityIdentity newId = getCapabilityIdentity(newKey);
-
-      log.info("Added capability {} -> {}", newId, capability);
-
-      return getCapabilityIdentity(newKey);
+      return asCapabilityIdentity(
+          keyValueStore.create(CAPABILITY_SCHEMA, CapabilityStorageItem.class, item, TypeValidation.STRICT)
+      );
     }
     catch (KazukiException e) {
-      throw Throwables.propagate(e);
-    }
-    finally {
-      lock.unlock();
+      throw new IOException("Capability could not be added", e);
     }
   }
 
   @Override
   public boolean update(final CapabilityIdentity id, final CapabilityStorageItem item) throws IOException {
     try {
-      lock.lock();
-
-      final CCapability capability = asCCapability(item);
-
-      log.info("Updating capability '{}' : {}", id, capability);
-
-      boolean success = keyValueStore.update(getKey(id), CCapability.class, capability);
-
-      if (success) {
-        log.info("Updated capability '{}' : {}", id, capability);
-      }
-      else {
-        log.info("Update failed - capability not updated '{}' {}", id, capability);
-      }
-
-      return success;
+      return keyValueStore.update(asKey(id), CapabilityStorageItem.class, item);
     }
     catch (KazukiException e) {
-      throw Throwables.propagate(e);
-    }
-    finally {
-      lock.unlock();
+      throw new IOException("Capability could not be updated", e);
     }
   }
 
   @Override
   public boolean remove(final CapabilityIdentity id) throws IOException {
     try {
-      lock.lock();
-
-      log.info("Removing capability '{}'", id);
-
-      boolean success = keyValueStore.delete(getKey(id));
-      
-      if (success) {
-        log.info("Removed capability '{}'", id);
-      }
-      else {
-        log.info("Remove failed - capability '{}'", id);
-      }
-
-      return success;
-    } catch (KazukiException e) {
-      throw Throwables.propagate(e);
+      return keyValueStore.delete(asKey(id));
     }
-    finally {
-      lock.unlock();
+    catch (KazukiException e) {
+      throw new IOException("Capability could not be removed", e);
     }
   }
 
   @Override
   public Map<CapabilityIdentity, CapabilityStorageItem> getAll() throws IOException {
-    Map<CapabilityIdentity, CapabilityStorageItem> items = new LinkedHashMap<CapabilityIdentity, CapabilityStorageItem>();
+    Map<CapabilityIdentity, CapabilityStorageItem> items = Maps.newHashMap();
 
-    for (KeyValuePair<CCapability> entry : keyValueStore.iterators().entries(CAPABILITY_SCHEMA, CCapability.class)) {
-      items.put(getCapabilityIdentity(entry.getKey()), asCapabilityStorageItem(entry.getValue()));
+    KeyValueIterable<KeyValuePair<CapabilityStorageItem>> entries = keyValueStore.iterators().entries(
+        CAPABILITY_SCHEMA, CapabilityStorageItem.class
+    );
+
+    for (KeyValuePair<CapabilityStorageItem> entry : entries) {
+      items.put(asCapabilityIdentity(entry.getKey()), entry.getValue());
     }
-
-    log.info("Get all capabilities {}", items);
-
     return items;
   }
 
-  public Configuration load() throws IOException {
-    Configuration config = new Configuration();
-    config.setVersion(Configuration.MODEL_VERSION);
-
-    for (CCapability capability : keyValueStore.iterators().values(CAPABILITY_SCHEMA, CCapability.class)) {
-      config.addCapability(capability);
-    }
-
-    log.info("Loaded capabilities {}", config.getCapabilities());
-
-    return config;
+  private static Key asKey(final CapabilityIdentity id) {
+    return new Key(CAPABILITY_SCHEMA, Long.valueOf(id.toString()));
   }
 
-  private Key getKey(CapabilityIdentity id) {
-    return Key.valueOf("@" + CAPABILITY_SCHEMA + ":" + id.toString());
-  }
-
-  private CapabilityIdentity getCapabilityIdentity(Key id) {
-    return new CapabilityIdentity(id.getEncryptedIdentifier().split(":")[1]);
-  }
-
-  private CapabilityStorageItem asCapabilityStorageItem(final CCapability capability) {
-    final Map<String, String> properties = new HashMap<String, String>();
-    if (capability.getProperties() != null) {
-      for (final CCapabilityProperty property : capability.getProperties()) {
-        properties.put(property.getKey(), property.getValue());
-      }
-    }
-
-    return new CapabilityStorageItem(
-        capability.getVersion(),
-        capabilityType(capability.getTypeId()),
-        capability.isEnabled(),
-        capability.getNotes(),
-        properties
-    );
-  }
-
-  private CCapability asCCapability(final CapabilityStorageItem item) {
-    final CCapability capability = new CCapability();
-    capability.setVersion(item.version());
-    capability.setTypeId(item.type().toString());
-    capability.setEnabled(item.isEnabled());
-    capability.setNotes(item.notes());
-    if (item.properties() != null) {
-      for (Map.Entry<String, String> entry : item.properties().entrySet()) {
-        final CCapabilityProperty property = new CCapabilityProperty();
-        property.setKey(entry.getKey());
-        property.setValue(entry.getValue());
-        capability.addProperty(property);
-      }
-    }
-    return capability;
+  private static CapabilityIdentity asCapabilityIdentity(final Key key) {
+    return new CapabilityIdentity(key.getIdentifier());
   }
 
 }

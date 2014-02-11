@@ -61,6 +61,7 @@ import com.google.common.collect.Maps;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
 import static java.util.Collections.unmodifiableCollection;
+import static org.sonatype.nexus.plugins.capabilities.CapabilityType.capabilityType;
 
 /**
  * Default {@link CapabilityRegistry} implementation.
@@ -136,7 +137,7 @@ public class DefaultCapabilityRegistry
       final Map<String, String> encryptedProps = encryptValuesIfNeeded(descriptor, props);
 
       final CapabilityIdentity generatedId = capabilityStorage.add(new CapabilityStorageItem(
-          descriptor.version(), type, enabled, notes, encryptedProps
+          descriptor.version(), type.toString(), enabled, notes, encryptedProps
       ));
 
       log.debug("Added capability '{}' of type '{}' with properties '{}'", generatedId, type, encryptedProps);
@@ -178,7 +179,7 @@ public class DefaultCapabilityRegistry
       final Map<String, String> encryptedProps = encryptValuesIfNeeded(reference.descriptor(), props);
 
       capabilityStorage.update(id, new CapabilityStorageItem(
-          reference.descriptor().version(), reference.type(), enabled, notes, encryptedProps)
+          reference.descriptor().version(), reference.type().toString(), enabled, notes, encryptedProps)
       );
 
       log.debug(
@@ -313,7 +314,7 @@ public class DefaultCapabilityRegistry
           id, item.type(), item.properties()
       );
 
-      final CapabilityDescriptor descriptor = capabilityDescriptorRegistry.get(item.type());
+      final CapabilityDescriptor descriptor = capabilityDescriptorRegistry.get(capabilityType(item.type()));
 
       if (descriptor == null) {
         log.warn(
@@ -355,7 +356,7 @@ public class DefaultCapabilityRegistry
         );
       }
 
-      final DefaultCapabilityReference reference = create(id, item.type(), descriptor);
+      final DefaultCapabilityReference reference = create(id, capabilityType(item.type()), descriptor);
 
       reference.setNotes(item.notes());
       reference.load(properties);
