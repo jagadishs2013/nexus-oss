@@ -10,6 +10,7 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
+
 package org.sonatype.nexus.analytics.internal;
 
 import java.util.Collections;
@@ -26,6 +27,7 @@ import org.sonatype.nexus.plugins.capabilities.Condition;
 import org.sonatype.nexus.scheduling.NexusScheduler;
 import org.sonatype.scheduling.ScheduledTask;
 import org.sonatype.scheduling.schedules.CronSchedule;
+import org.sonatype.scheduling.schedules.ManualRunSchedule;
 import org.sonatype.scheduling.schedules.Schedule;
 import org.sonatype.sisu.goodies.i18n.I18N;
 import org.sonatype.sisu.goodies.i18n.MessageBundle;
@@ -44,11 +46,10 @@ public class AutoSubmitCapability
   private static interface Messages
       extends MessageBundle
   {
-    // TODO: change this to last submission time or something
-    @DefaultMessage("Automatic submission is enabled")
+    @DefaultMessage("Submission enabled")
     String description();
 
-    @DefaultMessage("Automatic submission is disabled")
+    @DefaultMessage("Submission disabled")
     String disabledDescription();
   }
 
@@ -57,8 +58,6 @@ public class AutoSubmitCapability
   private final NexusScheduler scheduler;
 
   private final Provider<AutoSubmitTask> taskFactory;
-
-  private String taskId;
 
   @Inject
   public AutoSubmitCapability(final NexusScheduler scheduler,
@@ -82,37 +81,36 @@ public class AutoSubmitCapability
     );
   }
 
-  @Override
-  protected void onActivate(final AutoSubmitCapabilityConfiguration config) throws Exception {
-    // TODO: Use taskId cache if it exists to find the task
+  /**
+   * Get the {@link AutoSubmitTask} scheduled task;
+   */
+  private ScheduledTask<?> getTask() throws Exception {
+    ScheduledTask<?> scheduled;
 
-    ScheduledTask scheduled;
-
-    // automatically create task if needed
     List<ScheduledTask<?>> tasks = tasksForTypeId(AutoSubmitTask.ID);
     if (tasks.isEmpty()) {
+      // create new task
       AutoSubmitTask task = taskFactory.get();
       // default run at 1AM daily
       Schedule schedule = new CronSchedule("0 0 1 * * ?");
       scheduled = scheduler.schedule("Automatically submit analytics events", task, schedule);
-      log.debug("Scheduled new task: {}", scheduled);
+      log.debug("Created task: {}", scheduled);
     }
     else {
-      // else reference existing task
-      // TODO: Sort out multiple tasks
+      // complain if there is more than one
+      if (tasks.size() != 1) {
+        log.warn("More than 1 task found, additional tasks should be removed");
+      }
       scheduled = tasks.get(0);
-      log.debug("Resolved existing task: {}", scheduled);
+
+      // complain is task is set to manual, as this won't actually automatically do anything
+      Schedule schedule = scheduled.getSchedule();
+      if (schedule instanceof ManualRunSchedule) {
+        log.warn("Task schedule is set to manual");
+      }
     }
 
-    // HACK: Find better way to manage ref
-    taskId = scheduled.getId();
-    log.debug("Task ID: {}", taskId);
-
-    // TODO: Complain if schedule is manual?
-
-    // enable task and save
-    scheduled.setEnabled(true);
-    scheduler.updateSchedule(scheduled);
+    return scheduled;
   }
 
   /**
@@ -128,19 +126,27 @@ public class AutoSubmitCapability
   }
 
   @Override
+  protected void onActivate(final AutoSubmitCapabilityConfiguration config) throws Exception {
+    // enable the task
+    ScheduledTask task = getTask();
+    task.setEnabled(true);
+    scheduler.updateSchedule(task);
+  }
+
+  @Override
   protected void onPassivate(final AutoSubmitCapabilityConfiguration config) throws Exception {
-    ScheduledTask scheduled = scheduler.getTaskById(taskId);
-
-    // TODO: Sort out handling stopping task if its running?
-
     // disable the task
-    scheduled.setEnabled(false);
-    scheduler.updateSchedule(scheduled);
+    ScheduledTask task = getTask();
+    task.setEnabled(false);
+    scheduler.updateSchedule(task);
   }
 
   @Override
   protected void onRemove(final AutoSubmitCapabilityConfiguration config) throws Exception {
-    // TODO: Remove task (api appears to be task.cancel())
+    // should only be 1 task, but for sanity cancel any of this type
+    for (ScheduledTask<?> task : tasksForTypeId(AutoSubmitTask.ID)) {
+      task.cancel();
+    }
   }
 
   @Override

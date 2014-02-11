@@ -40,7 +40,7 @@ public class CollectionCapability
     @DefaultMessage("Events: %s")
     String description(long count);
 
-    @DefaultMessage("Collection is disabled")
+    @DefaultMessage("Collection disabled")
     String disabledDescription();
   }
 
