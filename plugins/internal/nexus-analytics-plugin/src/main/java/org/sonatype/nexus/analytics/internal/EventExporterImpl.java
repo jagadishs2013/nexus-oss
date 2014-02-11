@@ -16,7 +16,6 @@ package org.sonatype.nexus.analytics.internal;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.util.Iterator;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
@@ -41,6 +40,7 @@ import com.google.common.cache.CacheBuilder;
 import io.kazuki.v0.store.journal.JournalStore;
 import io.kazuki.v0.store.journal.PartitionInfo;
 import io.kazuki.v0.store.journal.PartitionInfoSnapshot;
+import io.kazuki.v0.store.keyvalue.KeyValuePair;
 import org.apache.commons.lang.time.StopWatch;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -146,9 +146,8 @@ public class EventExporterImpl
       // TODO: Write out a EventHeader to header.json
 
       // write each partition to its own file in the zip
-      Iterator<PartitionInfoSnapshot> partitions = journal.getAllPartitions();
-      while (partitions.hasNext()) {
-        PartitionInfo partition = partitions.next();
+      Iterable<PartitionInfoSnapshot> partitions = journal.getAllPartitions();
+      for (PartitionInfo partition : partitions) {
         if (!partition.isClosed()) {
           // skip new open partitions, this is new data _after_ the export was requested
           break;
@@ -156,19 +155,19 @@ public class EventExporterImpl
         partitionCount++;
 
         // new entry in the zip for each partition
-        ZipEntry entry = new ZipEntry("events-" + partitionCount + ".json");
-        output.putNextEntry(entry);
+        ZipEntry zipEntry = new ZipEntry("events-" + partitionCount + ".json");
+        output.putNextEntry(zipEntry);
         log.debug("Writing entry: {}, partition: {} w/{} records",
-            entry.getName(), partition.getPartitionId(), partition.getSize());
+            zipEntry.getName(), partition.getPartitionId(), partition.getSize());
 
         JsonGenerator generator = jsonFactory.createGenerator(output);
         generator.writeStartArray();
 
-        Iterator<EventData> events = journal.getIteratorRelative(
+        Iterable<KeyValuePair<EventData>> events = journal.entriesRelative(
             EventStore.SCHEMA_NAME, EventData.class, 0L, partition.getSize());
 
-        while (events.hasNext()) {
-          generator.writeObject(anonymizerHelper.anonymize(events.next()));
+        for (KeyValuePair<EventData> entry : events) {
+          generator.writeObject(anonymizerHelper.anonymize(entry.getValue()));
           eventCount++;
         }
 

@@ -12,8 +12,6 @@
  */
 package org.sonatype.nexus.analytics.internal;
 
-import java.util.Iterator;
-
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -28,6 +26,7 @@ import io.kazuki.v0.internal.v2schema.Attribute;
 import io.kazuki.v0.internal.v2schema.Attribute.Type;
 import io.kazuki.v0.internal.v2schema.Schema;
 import io.kazuki.v0.store.journal.JournalStore;
+import io.kazuki.v0.store.keyvalue.KeyValuePair;
 import io.kazuki.v0.store.lifecycle.Lifecycle;
 import io.kazuki.v0.store.schema.SchemaStore;
 import io.kazuki.v0.store.schema.TypeValidation;
@@ -110,8 +109,8 @@ public class EventStoreImpl
   }
 
   @Override
-  public Iterator<EventData> iterator(final long offset, @Nullable Long limit) throws Exception {
+  public Iterable<KeyValuePair<EventData>> iterator(final long offset, @Nullable Long limit) throws Exception {
     ensureStarted();
-    return store.getIteratorRelative(SCHEMA_NAME, EventData.class, offset, limit);
+    return store.entriesRelative(SCHEMA_NAME, EventData.class, offset, limit);
   }
 }
