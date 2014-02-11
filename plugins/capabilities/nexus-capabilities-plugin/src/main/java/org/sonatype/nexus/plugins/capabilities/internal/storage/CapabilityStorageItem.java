@@ -15,7 +15,6 @@ package org.sonatype.nexus.plugins.capabilities.internal.storage;
 
 import java.util.Map;
 
-import org.sonatype.nexus.plugins.capabilities.CapabilityIdentity;
 import org.sonatype.nexus.plugins.capabilities.CapabilityType;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -23,8 +22,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class CapabilityStorageItem
 {
   private final int version;
-
-  private final CapabilityIdentity id;
 
   private final CapabilityType type;
 
@@ -35,14 +32,12 @@ public class CapabilityStorageItem
   private final Map<String, String> properties;
 
   public CapabilityStorageItem(final int version,
-                               final CapabilityIdentity id,
                                final CapabilityType type,
                                final boolean enabled,
                                final String notes,
                                final Map<String, String> properties)
   {
     this.version = version;
-    this.id = checkNotNull(id);
     this.type = checkNotNull(type);
     this.enabled = enabled;
     this.notes = notes;
@@ -51,10 +46,6 @@ public class CapabilityStorageItem
 
   public int version() {
     return version;
-  }
-
-  public CapabilityIdentity id() {
-    return id;
   }
 
   public CapabilityType type() {

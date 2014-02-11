@@ -19,7 +19,6 @@ import java.util.Map;
 
 import javax.inject.Provider;
 
-import org.sonatype.nexus.configuration.DefaultConfigurationIdGenerator;
 import org.sonatype.nexus.configuration.PasswordHelper;
 import org.sonatype.nexus.formfields.Encrypted;
 import org.sonatype.nexus.formfields.FormField;
@@ -40,7 +39,9 @@ import org.sonatype.plexus.components.cipher.DefaultPlexusCipher;
 import org.sonatype.sisu.goodies.eventbus.EventBus;
 import org.sonatype.sisu.litmus.testsupport.TestSupport;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -130,7 +131,6 @@ public class DefaultCapabilityRegistryTest
 
     underTest = new DefaultCapabilityRegistry(
         capabilityStorage,
-        new DefaultConfigurationIdGenerator(),
         validatorRegistryProvider,
         capabilityFactoryRegistry,
         capabilityDescriptorRegistry,
@@ -262,9 +262,9 @@ public class DefaultCapabilityRegistryTest
     oldProps.put("p2", "v2");
 
     final CapabilityStorageItem item = new CapabilityStorageItem(
-        0, capabilityIdentity("foo"), CAPABILITY_TYPE, true, null, oldProps
+        0, CAPABILITY_TYPE, true, null, oldProps
     );
-    when(capabilityStorage.getAll()).thenReturn(Arrays.asList(item));
+    when(capabilityStorage.getAll()).thenReturn(ImmutableMap.of(capabilityIdentity("foo"), item));
 
     final CapabilityDescriptor descriptor = mock(CapabilityDescriptor.class);
     when(capabilityDescriptorRegistry.get(CAPABILITY_TYPE)).thenReturn(descriptor);
@@ -292,9 +292,9 @@ public class DefaultCapabilityRegistryTest
     oldProps.put("p2", "v2");
 
     final CapabilityStorageItem item = new CapabilityStorageItem(
-        0, capabilityIdentity("foo"), CAPABILITY_TYPE, true, null, oldProps
+        0, CAPABILITY_TYPE, true, null, oldProps
     );
-    when(capabilityStorage.getAll()).thenReturn(Arrays.asList(item));
+    when(capabilityStorage.getAll()).thenReturn(ImmutableMap.of(capabilityIdentity("foo"), item));
 
     final CapabilityDescriptor descriptor = mock(CapabilityDescriptor.class);
     when(capabilityDescriptorRegistry.get(CAPABILITY_TYPE)).thenReturn(descriptor);
@@ -312,7 +312,7 @@ public class DefaultCapabilityRegistryTest
     verify(descriptor, atLeastOnce()).version();
     verify(descriptor).convert(oldProps, 0);
     final ArgumentCaptor<CapabilityStorageItem> captor = ArgumentCaptor.forClass(CapabilityStorageItem.class);
-    verify(capabilityStorage).update(captor.capture());
+    verify(capabilityStorage).update(capabilityIdentity("foo"), captor.capture());
     assertThat(captor.getValue(), is(notNullValue()));
 
     final Map<String, String> actualNewProps = captor.getValue().properties();
@@ -333,9 +333,9 @@ public class DefaultCapabilityRegistryTest
     oldProps.put("p2", "v2");
 
     final CapabilityStorageItem item = new CapabilityStorageItem(
-        0, capabilityIdentity("foo"), CAPABILITY_TYPE, true, null, oldProps
+        0, CAPABILITY_TYPE, true, null, oldProps
     );
-    when(capabilityStorage.getAll()).thenReturn(Arrays.asList(item));
+    when(capabilityStorage.getAll()).thenReturn(ImmutableMap.of(capabilityIdentity("foo"), item));
 
     final CapabilityDescriptor descriptor = mock(CapabilityDescriptor.class);
     when(capabilityDescriptorRegistry.get(CAPABILITY_TYPE)).thenReturn(descriptor);
@@ -363,9 +363,9 @@ public class DefaultCapabilityRegistryTest
       throws Exception
   {
     final CapabilityStorageItem item = new CapabilityStorageItem(
-        0, capabilityIdentity("foo"), CAPABILITY_TYPE, true, null, null
+        0, CAPABILITY_TYPE, true, null, null
     );
-    when(capabilityStorage.getAll()).thenReturn(Arrays.asList(item));
+    when(capabilityStorage.getAll()).thenReturn(ImmutableMap.of(capabilityIdentity("foo"), item));
 
     when(capabilityDescriptorRegistry.get(CAPABILITY_TYPE)).thenReturn(null);
 
@@ -414,9 +414,9 @@ public class DefaultCapabilityRegistryTest
     properties.put("foo", passwordHelper.encrypt("bar"));
 
     final CapabilityStorageItem item = new CapabilityStorageItem(
-        0, capabilityIdentity("foo"), CAPABILITY_TYPE, true, null, properties
+        0, CAPABILITY_TYPE, true, null, properties
     );
-    when(capabilityStorage.getAll()).thenReturn(Arrays.asList(item));
+    when(capabilityStorage.getAll()).thenReturn(ImmutableMap.of(capabilityIdentity("foo"), item));
 
     final CapabilityDescriptor descriptor = mock(CapabilityDescriptor.class);
     when(capabilityDescriptorRegistry.get(CAPABILITY_TYPE)).thenReturn(descriptor);
