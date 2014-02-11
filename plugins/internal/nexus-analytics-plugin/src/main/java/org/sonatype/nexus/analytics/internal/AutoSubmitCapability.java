@@ -126,6 +126,9 @@ public class AutoSubmitCapability
   }
 
   // FIXME: Can not reference scheduled tasks onLoad, this happens too early
+  // FIXME: Replace with NexusStarted event handler to keep state in sync?
+  // FIXME: Additionally, perhaps the AutoSubmitTask should verify that the capability is enabled before running?
+
   //@Override
   //protected void onLoad(final AutoSubmitCapabilityConfiguration config) throws Exception {
   //  // disable the task, to keep state in sync in case of user manually toggling state
