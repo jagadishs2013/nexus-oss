@@ -25,10 +25,16 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *
  * @since 2.8
  */
-@Named
+@Named(SubmitTask.ID)
 public class SubmitTask
   extends NexusTaskSupport
 {
+  // FIXME: Presently the ID *MUST* be the class.simpleName
+  // FIXME: if a different value is used, the scheduling components will not work
+
+  public static final String ID = "SubmitTask";
+  //public static final String ID = AnalyticsPlugin.ID_PREFIX + ".submit";
+
   private final EventExporter eventExporter;
 
   @Inject
@@ -40,8 +46,6 @@ public class SubmitTask
   protected String getMessage() {
     return "Submitting analytics events";
   }
-
-  // NOTE: Perhaps want to use same task for manual+auto so that only 1 can run at one time?
 
   @Override
   protected void execute() throws Exception {

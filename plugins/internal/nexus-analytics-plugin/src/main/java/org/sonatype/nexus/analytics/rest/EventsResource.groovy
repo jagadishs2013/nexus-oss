@@ -142,7 +142,8 @@ class EventsResource
   @Timed
   void submit() {
     def task = submitTaskFactory.get()
-    nexusScheduler.submit(null, task)
+    def scheduled = nexusScheduler.submit('Manually submit analytics events', task)
+    log.debug("Scheduled task: $scheduled")
   }
 
   /**
@@ -154,6 +155,9 @@ class EventsResource
   @RequiresPermissions('nexus:analytics')
   @Timed
   Map export() {
+    // FIXME: Need to resolve how to deal with this, large # of events could take a while to export
+    // FIXME: And we may need to provide another way to express this to the user and/or allow them to download the file
+
     def file = eventExporter.export(false) // no drop
     return [
         file: file.absolutePath,

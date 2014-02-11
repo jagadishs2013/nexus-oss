@@ -57,11 +57,11 @@ public class AutoSubmitCapability
 
   private final NexusScheduler scheduler;
 
-  private final Provider<AutoSubmitTask> taskFactory;
+  private final Provider<SubmitTask> taskFactory;
 
   @Inject
   public AutoSubmitCapability(final NexusScheduler scheduler,
-                              final Provider<AutoSubmitTask> taskFactory)
+                              final Provider<SubmitTask> taskFactory)
   {
     this.scheduler = checkNotNull(scheduler);
     this.taskFactory = checkNotNull(taskFactory);
@@ -82,15 +82,15 @@ public class AutoSubmitCapability
   }
 
   /**
-   * Get the {@link AutoSubmitTask} scheduled task;
+   * Get the {@link SubmitTask} scheduled task;
    */
   private ScheduledTask<?> getTask() throws Exception {
     ScheduledTask<?> scheduled;
 
-    List<ScheduledTask<?>> tasks = tasksForTypeId(AutoSubmitTask.ID);
+    List<ScheduledTask<?>> tasks = tasksForTypeId(SubmitTask.ID);
     if (tasks.isEmpty()) {
       // create new task
-      AutoSubmitTask task = taskFactory.get();
+      SubmitTask task = taskFactory.get();
       // default run at 1AM daily
       Schedule schedule = new CronSchedule("0 0 1 * * ?");
       scheduled = scheduler.schedule("Automatically submit analytics events", task, schedule);
@@ -127,7 +127,7 @@ public class AutoSubmitCapability
 
   // FIXME: Can not reference scheduled tasks onLoad, this happens too early
   // FIXME: Replace with NexusStarted event handler to keep state in sync?
-  // FIXME: Additionally, perhaps the AutoSubmitTask should verify that the capability is enabled before running?
+  // FIXME: Additionally, perhaps the SubmitTask should verify that the capability is enabled before running?
 
   //@Override
   //protected void onLoad(final AutoSubmitCapabilityConfiguration config) throws Exception {
@@ -160,7 +160,7 @@ public class AutoSubmitCapability
   @Override
   protected void onRemove(final AutoSubmitCapabilityConfiguration config) throws Exception {
     // should only be 1 task, but for sanity cancel any of this type
-    for (ScheduledTask<?> task : tasksForTypeId(AutoSubmitTask.ID)) {
+    for (ScheduledTask<?> task : tasksForTypeId(SubmitTask.ID)) {
       task.cancel();
     }
   }
