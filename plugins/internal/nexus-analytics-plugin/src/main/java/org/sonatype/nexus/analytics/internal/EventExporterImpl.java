@@ -120,6 +120,8 @@ public class EventExporterImpl
   private File doExport(final boolean dropAfterExport) throws Exception {
     log.info("Exporting; dropAfterExport: {}", dropAfterExport);
 
+    // TODO: Skip if there are no events
+
     StopWatch watch = new StopWatch();
     watch.start();
 
@@ -163,10 +165,10 @@ public class EventExporterImpl
         JsonGenerator generator = jsonFactory.createGenerator(output);
         generator.writeStartArray();
 
-        Iterable<KeyValuePair<EventData>> events = journal.entriesRelative(
+        Iterable<KeyValuePair<EventData>> iter = journal.entriesRelative(
             EventStore.SCHEMA_NAME, EventData.class, 0L, partition.getSize());
 
-        for (KeyValuePair<EventData> entry : events) {
+        for (KeyValuePair<EventData> entry : iter) {
           generator.writeObject(anonymizerHelper.anonymize(entry.getValue()));
           eventCount++;
         }
