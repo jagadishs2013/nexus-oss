@@ -139,6 +139,11 @@ public class AutoSubmitCapability
   }
 
   @Override
+  protected void onRemove(final AutoSubmitCapabilityConfiguration config) throws Exception {
+    // TODO: Remove task (api appears to be task.cancel())
+  }
+
+  @Override
   protected String renderDescription() throws Exception {
     if (!context().isActive()) {
       return messages.disabledDescription();
