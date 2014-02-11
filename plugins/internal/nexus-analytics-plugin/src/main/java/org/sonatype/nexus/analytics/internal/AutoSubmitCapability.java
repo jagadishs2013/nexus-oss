@@ -125,6 +125,17 @@ public class AutoSubmitCapability
     return Collections.emptyList();
   }
 
+  // FIXME: Can not reference scheduled tasks onLoad, this happens too early
+  //@Override
+  //protected void onLoad(final AutoSubmitCapabilityConfiguration config) throws Exception {
+  //  // disable the task, to keep state in sync in case of user manually toggling state
+  //  ScheduledTask task = getTask();
+  //  if (task.isEnabled()) {
+  //    task.setEnabled(false);
+  //    scheduler.updateSchedule(task);
+  //  }
+  //}
+
   @Override
   protected void onActivate(final AutoSubmitCapabilityConfiguration config) throws Exception {
     // enable the task
