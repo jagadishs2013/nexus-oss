@@ -49,7 +49,7 @@ public class SubmitTask
 
   @Override
   protected void execute() throws Exception {
-    // HACK: for now simply export with drop
-    eventExporter.export(true);
+    // HACK: for now simply export with-out drop
+    eventExporter.export(false);
   }
 }
