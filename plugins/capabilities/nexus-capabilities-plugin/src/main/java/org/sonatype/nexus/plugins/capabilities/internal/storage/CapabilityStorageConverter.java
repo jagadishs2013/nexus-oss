@@ -63,7 +63,7 @@ public class CapabilityStorageConverter
     this.capabilityStorage = checkNotNull(capabilityStorage);
   }
 
-  public void convertIfNecessary() throws Exception {
+  public void convertToKazukiIfNecessary() throws Exception {
     File configFile = new File(configDir, "capabilities.xml");
     if (configFile.exists()) {
       log.info("Converting capabilities from capabilities.xml to Kazuki...");

@@ -20,7 +20,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 import org.eclipse.sisu.EagerSingleton;
-import org.sonatype.nexus.plugins.capabilities.internal.storage.CapabilityStorage;
+
 import org.sonatype.nexus.plugins.capabilities.internal.storage.CapabilityStorageConverter;
 import org.sonatype.nexus.plugins.capabilities.internal.storage.DefaultCapabilityStorage;
 import org.sonatype.nexus.proxy.events.NexusInitializedEvent;
@@ -65,7 +65,7 @@ public class CapabilityRegistryBooter
       lifecycle.init();
       lifecycle.start();
       capabilityStorage.start();
-      storageConverter.convertIfNecessary();
+      storageConverter.convertToKazukiIfNecessary();
       capabilityRegistry.get().load();
     }
     catch (final Exception e) {
