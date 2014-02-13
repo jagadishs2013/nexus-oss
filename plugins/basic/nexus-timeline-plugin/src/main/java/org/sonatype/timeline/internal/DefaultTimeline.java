@@ -175,8 +175,9 @@ public class DefaultTimeline
           continue; // skip it
         }
         if (filter != null && !filter.accept(record)) {
-          callback.processNext(record);
+          continue; // skip it
         }
+        callback.processNext(record);
       }
     }
     catch (IOException e) {
