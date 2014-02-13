@@ -47,15 +47,21 @@ NX.define('Nexus.analytics.view.Settings', {
         {
           xtype: 'form',
           id: 'nx-analytics-view-settings-form',
+          border: false,
+          style: {
+            padding: '10px'
+          },
           items: [
             {
               xtype: 'checkbox',
               name: 'collection',
+              hideLabel: true,
               boxLabel: 'Enable analytics event collection'
             },
             {
               xtype: 'checkbox',
               name: 'autosubmit',
+              hideLabel: true,
               boxLabel: 'Enable automatic analytics event submission to Sonatype'
             }
           ],
