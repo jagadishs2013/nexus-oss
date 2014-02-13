@@ -69,7 +69,7 @@ public class CapabilityRegistryBooter
       capabilityRegistry.get().load();
     }
     catch (final Exception e) {
-      throw new RuntimeException("Could not load configurations", e);
+      throw new Error("Could not boot capabilities", e);
     }
   }
 
