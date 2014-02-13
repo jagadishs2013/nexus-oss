@@ -122,7 +122,7 @@ public class DefaultCapabilityStorage
   }
 
   private static CapabilityIdentity asCapabilityIdentity(final Key key) {
-    return new CapabilityIdentity(key.getIdentifier());
+    return new CapabilityIdentity(String.valueOf(key.getId()));
   }
 
 }
