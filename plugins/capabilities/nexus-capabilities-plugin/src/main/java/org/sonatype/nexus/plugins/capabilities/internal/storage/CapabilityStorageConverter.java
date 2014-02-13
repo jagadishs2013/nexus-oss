@@ -16,18 +16,21 @@ package org.sonatype.nexus.plugins.capabilities.internal.storage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
+import org.sonatype.nexus.plugins.capabilities.CapabilityIdentity;
 import org.sonatype.nexus.plugins.capabilities.internal.config.persistence.CCapability;
 import org.sonatype.nexus.plugins.capabilities.internal.config.persistence.CCapabilityProperty;
 import org.sonatype.nexus.plugins.capabilities.internal.config.persistence.Configuration;
@@ -78,6 +81,15 @@ public class CapabilityStorageConverter
     }
   }
 
+  public Configuration convertFromKazuki() throws IOException {
+    Map<CapabilityIdentity, CapabilityStorageItem> capabilities = capabilityStorage.getAll();
+    Configuration configuration = new Configuration();
+    for (Entry<CapabilityIdentity, CapabilityStorageItem> entry : capabilities.entrySet()) {
+      configuration.addCapability(asCCapability(entry.getKey().toString(), entry.getValue()));
+    }
+    return configuration;
+  }
+
   private void convertToKazuki(final File configFile) throws Exception {
     try (Reader r = new FileReader(configFile);
          FileInputStream is = new FileInputStream(configFile);
@@ -111,6 +123,24 @@ public class CapabilityStorageConverter
     Files.copy(configFile.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
     Files.delete(configFile.toPath());
     return backupFile;
+  }
+
+  private CCapability asCCapability(final String id, final CapabilityStorageItem item) {
+    final CCapability capability = new CCapability();
+    capability.setId(id);
+    capability.setVersion(item.getVersion());
+    capability.setTypeId(item.getType());
+    capability.setEnabled(item.isEnabled());
+    capability.setNotes(item.getNotes());
+    if (item.getProperties() != null) {
+      for (Map.Entry<String, String> entry : item.getProperties().entrySet()) {
+        final CCapabilityProperty property = new CCapabilityProperty();
+        property.setKey(entry.getKey());
+        property.setValue(entry.getValue());
+        capability.addProperty(property);
+      }
+    }
+    return capability;
   }
 
 }
