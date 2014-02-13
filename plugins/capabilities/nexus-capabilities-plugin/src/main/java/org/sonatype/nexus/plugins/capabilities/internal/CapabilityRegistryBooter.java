@@ -21,6 +21,7 @@ import javax.inject.Named;
 
 import org.eclipse.sisu.EagerSingleton;
 import org.sonatype.nexus.plugins.capabilities.internal.storage.CapabilityStorage;
+import org.sonatype.nexus.plugins.capabilities.internal.storage.CapabilityStorageConverter;
 import org.sonatype.nexus.plugins.capabilities.internal.storage.DefaultCapabilityStorage;
 import org.sonatype.nexus.proxy.events.NexusInitializedEvent;
 import org.sonatype.nexus.proxy.events.NexusStoppingEvent;
@@ -42,15 +43,19 @@ public class CapabilityRegistryBooter
   private final DefaultCapabilityStorage capabilityStorage;
   private final Lifecycle lifecycle;
 
+  private final CapabilityStorageConverter storageConverter;
+
   @Inject
   public CapabilityRegistryBooter(final Provider<DefaultCapabilityRegistry> capabilityRegistry,
                                   final DefaultCapabilityStorage capabilityStorage,
                                   final EventBus eventBus,
-                                  final @Named("nexuscapability") Lifecycle lifecycle)
+                                  final @Named("nexuscapability") Lifecycle lifecycle,
+                                  final CapabilityStorageConverter storageConverter)
   {
     this.capabilityRegistry = capabilityRegistry;
     this.capabilityStorage = checkNotNull(capabilityStorage);
     this.lifecycle = lifecycle;
+    this.storageConverter = checkNotNull(storageConverter);
     checkNotNull(eventBus).register(this);
   }
 
@@ -60,6 +65,7 @@ public class CapabilityRegistryBooter
       lifecycle.init();
       lifecycle.start();
       capabilityStorage.start();
+      storageConverter.convertIfNecessary();
       capabilityRegistry.get().load();
     }
     catch (final Exception e) {
