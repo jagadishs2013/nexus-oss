@@ -325,7 +325,7 @@ public class DefaultCapabilityRegistryTest
     verify(capabilityStorage).update(Mockito.eq(capabilityIdentity("foo")), captor.capture());
     assertThat(captor.getValue(), is(notNullValue()));
 
-    final Map<String, String> actualNewProps = captor.getValue().properties();
+    final Map<String, String> actualNewProps = captor.getValue().getProperties();
     assertThat(newProps, is(equalTo(actualNewProps)));
   }
 
@@ -408,7 +408,7 @@ public class DefaultCapabilityRegistryTest
     verify(capabilityStorage).add(csiRec.capture());
     CapabilityStorageItem item = csiRec.getValue();
     assertThat(item, is(notNullValue()));
-    String fooValue = item.properties().get("foo");
+    String fooValue = item.getProperties().get("foo");
     assertThat(fooValue, not(is("bar")));
     assertThat(passwordHelper.decrypt(fooValue), is("bar"));
   }

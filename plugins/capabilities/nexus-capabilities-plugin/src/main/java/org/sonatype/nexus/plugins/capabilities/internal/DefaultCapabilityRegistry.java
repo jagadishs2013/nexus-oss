@@ -311,34 +311,34 @@ public class DefaultCapabilityRegistry
 
       log.debug(
           "Loading capability '{}' of type '{}' with properties '{}'",
-          id, item.type(), item.properties()
+          id, item.getType(), item.getProperties()
       );
 
-      final CapabilityDescriptor descriptor = capabilityDescriptorRegistry.get(capabilityType(item.type()));
+      final CapabilityDescriptor descriptor = capabilityDescriptorRegistry.get(capabilityType(item.getType()));
 
       if (descriptor == null) {
         log.warn(
             "Capabilities persistent storage (capabilities.xml?) contains an capability of unknown type {} with"
-                + " id {}. This capability will not be loaded", item.type(), id
+                + " id {}. This capability will not be loaded", item.getType(), id
         );
         continue;
       }
 
-      Map<String, String> properties = decryptValuesIfNeeded(descriptor, item.properties());
-      if (descriptor.version() != item.version()) {
+      Map<String, String> properties = decryptValuesIfNeeded(descriptor, item.getProperties());
+      if (descriptor.version() != item.getVersion()) {
         log.debug(
             "Converting capability '{}' properties from version '{}' to version '{}'",
-            id, item.version(), descriptor.version()
+            id, item.getVersion(), descriptor.version()
         );
         try {
-          properties = descriptor.convert(properties, item.version());
+          properties = descriptor.convert(properties, item.getVersion());
           if (properties == null) {
             properties = Collections.emptyMap();
           }
           if (log.isDebugEnabled()) {
             log.debug(
                 "Converted capability '{}' properties '{}' (version '{}') to '{}' (version '{}')",
-                id, item.properties(), item.version(),
+                id, item.getProperties(), item.getVersion(),
                 encryptValuesIfNeeded(descriptor, properties), descriptor.version()
             );
           }
@@ -347,18 +347,18 @@ public class DefaultCapabilityRegistry
           log.error(
               "Failed converting capability '{}' properties '{}' from version '{}' to version '{}'."
                   + " Capability will not be loaded",
-              id, item.properties(), item.version(), descriptor.version(), e
+              id, item.getProperties(), item.getVersion(), descriptor.version(), e
           );
           continue;
         }
         capabilityStorage.update(id, new CapabilityStorageItem(
-            descriptor.version(), item.type(), item.isEnabled(), item.notes(), properties)
+            descriptor.version(), item.getType(), item.isEnabled(), item.getNotes(), properties)
         );
       }
 
-      final DefaultCapabilityReference reference = create(id, capabilityType(item.type()), descriptor);
+      final DefaultCapabilityReference reference = create(id, capabilityType(item.getType()), descriptor);
 
-      reference.setNotes(item.notes());
+      reference.setNotes(item.getNotes());
       reference.load(properties);
       if (item.isEnabled()) {
         reference.enable();

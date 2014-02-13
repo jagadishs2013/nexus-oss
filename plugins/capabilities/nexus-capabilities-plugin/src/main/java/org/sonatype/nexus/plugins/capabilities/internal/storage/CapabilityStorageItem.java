@@ -19,15 +19,21 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class CapabilityStorageItem
 {
-  private final int version;
+  private int version;
 
-  private final String type;
+  private String type;
 
-  private final boolean enabled;
+  private boolean enabled;
 
-  private final String notes;
+  private String notes;
 
-  private final Map<String, String> properties;
+  private Map<String, String> properties;
+
+  /**
+   * @since 2.8
+   */
+  public CapabilityStorageItem() {
+  }
 
   public CapabilityStorageItem(final int version,
                                final String type,
@@ -42,24 +48,74 @@ public class CapabilityStorageItem
     this.properties = properties;
   }
 
-  public int version() {
+  /**
+   * @since 2.8
+   */
+  public int getVersion() {
     return version;
   }
 
-  public String type() {
+  /**
+   * @since 2.8
+   */
+  public void setVersion(final int version) {
+    this.version = version;
+  }
+
+  /**
+   * @since 2.8
+   */
+  public String getType() {
     return type;
   }
 
+  /**
+   * @since 2.8
+   */
+  public void setType(final String type) {
+    this.type = type;
+  }
+
+  /**
+   * @since 2.8
+   */
   public boolean isEnabled() {
     return enabled;
   }
 
-  public String notes() {
+  /**
+   * @since 2.8
+   */
+  public void setEnabled(final boolean enabled) {
+    this.enabled = enabled;
+  }
+
+  /**
+   * @since 2.8
+   */
+  public String getNotes() {
     return notes;
   }
 
-  public Map<String, String> properties() {
+  /**
+   * @since 2.8
+   */
+  public void setNotes(final String notes) {
+    this.notes = notes;
+  }
+
+  /**
+   * @since 2.8
+   */
+  public Map<String, String> getProperties() {
     return properties;
+  }
+
+  /**
+   * @since 2.8
+   */
+  public void setProperties(final Map<String, String> properties) {
+    this.properties = properties;
   }
 
 }
