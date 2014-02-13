@@ -149,21 +149,27 @@ public class DefaultTimeline
     if (!started) {
       return 0;
     }
-    // TODO: How to delete selectively the head of journal? Event if we neglect "days"..
-    // Basically, purge was needed to lessen Lucene index and it's impact on resources.
+    // TODO: How to delete selectively the tail of journal? Event if we neglect "days"..
+    // Basically, purge was needed to lessen Lucene index size and it's impact on resources.
     // If Kazuki "behaves" way better, we can simply tell users to remove their "Purge Timeline" tasks
     // as that task becomes obsolete.
     return 0;
   }
 
   @Override
-  public void retrieve(int fromItem, int count, Set<String> types, Set<String> subTypes, TimelineFilter filter,
-                       TimelineCallback callback)
+  public void retrieve(final int fromItem,
+                       final int count,
+                       final Set<String> types,
+                       final Set<String> subTypes,
+                       final TimelineFilter filter,
+                       final TimelineCallback callback)
   {
     if (!started) {
       return;
     }
     try {
+      // TODO: count input parameter should not be passed to Kazuki, as actually filtered records
+      // might change the "resulting set size" which is the meaning of count
       final Iterable<KeyValuePair<TimelineRecord>> kvs = journalStore
           .entriesRelative(TIMELINE_SCHEMA, TimelineRecord.class, (long) fromItem, (long) count);
       for (KeyValuePair<TimelineRecord> kv : kvs) {
