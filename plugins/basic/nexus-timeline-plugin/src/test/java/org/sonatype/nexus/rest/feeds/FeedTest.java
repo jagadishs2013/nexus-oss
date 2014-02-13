@@ -15,12 +15,15 @@ package org.sonatype.nexus.rest.feeds;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map;
 
 import org.sonatype.nexus.NexusAppTestSupport;
 import org.sonatype.nexus.rest.feeds.sources.FeedSource;
 import org.sonatype.plexus.rest.resource.PlexusResource;
+import org.sonatype.timeline.internal.guice.TimelineModule;
 
+import com.google.inject.Module;
 import com.sun.syndication.feed.synd.SyndFeed;
 import junit.framework.Assert;
 import org.junit.Test;
@@ -30,6 +33,11 @@ import org.restlet.data.Request;
 public class FeedTest
     extends NexusAppTestSupport
 {
+  @Override
+  protected void customizeModules(final List<Module> modules) {
+    modules.add(new TimelineModule());
+  }
+
   @Test
   public void testFeedSources()
       throws Exception

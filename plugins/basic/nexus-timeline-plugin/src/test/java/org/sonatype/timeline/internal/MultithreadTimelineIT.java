@@ -13,7 +13,6 @@
 
 package org.sonatype.timeline.internal;
 
-import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -24,6 +23,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.sonatype.sisu.litmus.testsupport.group.Slow;
+import org.sonatype.timeline.AbstractTimelineTestCase;
 import org.sonatype.timeline.Timeline;
 import org.sonatype.timeline.TimelineConfiguration;
 import org.sonatype.timeline.TimelineRecord;
@@ -32,12 +32,8 @@ import org.junit.experimental.categories.Category;
 
 @Category(Slow.class)
 public class MultithreadTimelineIT
-    extends AbstractInternalTimelineTestCase
+    extends AbstractTimelineTestCase
 {
-  protected File persistorDirectory;
-
-  protected File indexDirectory;
-
   protected static final Random rnd = new Random();
 
   // number of deploy threads (and search threads) to launch
@@ -52,82 +48,76 @@ public class MultithreadTimelineIT
   // time to sleep between starting threads, and stopping them
   protected static final long SLEEP_TIME = THREAD_COUNT * MAX_DEPLOY_SLEEP_TIME * 10;
 
-  @Override
-  public void setUp()
-      throws Exception
-  {
-    super.setUp();
-    persistorDirectory = new File(getBasedir(), "target/persistor");
-    indexDirectory = new File(getBasedir(), "target/index");
-    cleanDirectory(persistorDirectory);
-    cleanDirectory(indexDirectory);
-    timeline.start(new TimelineConfiguration(persistorDirectory, indexDirectory));
-  }
-
   public void testKindaNexus()
       throws Exception
   {
-    // nexus has deploys and searches happening same time
-    // so start 20 deployer (content change in nexus) threads and 10 searcher (RSS fetching) threads
+    timeline.start(new TimelineConfiguration());
+    try {
+      // nexus has deploys and searches happening same time
+      // so start 20 deployer (content change in nexus) threads and 10 searcher (RSS fetching) threads
 
-    List<DeployerThread> deployerThreads = new ArrayList<DeployerThread>();
+      List<DeployerThread> deployerThreads = new ArrayList<DeployerThread>();
 
-    for (int i = 0; i < THREAD_COUNT; i++) {
-      deployerThreads.add(new DeployerThread(timeline, new TimelineRecord(System.currentTimeMillis(),
-          "DT" + i, "1", new HashMap<String, String>())));
+      for (int i = 0; i < THREAD_COUNT; i++) {
+        deployerThreads.add(new DeployerThread(timeline, new TimelineRecord(System.currentTimeMillis(),
+            "DT" + i, "1", new HashMap<String, String>())));
+      }
+
+      List<SearcherThread> searcherThreads = new ArrayList<SearcherThread>();
+
+      for (int i = 0; i < THREAD_COUNT; i++) {
+        searcherThreads.add(new SearcherThread(timeline, "DT" + (i)));
+      }
+
+      for (DeployerThread thread : deployerThreads) {
+        thread.start();
+      }
+
+      for (SearcherThread thread : searcherThreads) {
+        thread.start();
+      }
+
+      // let them do some work
+      Thread.sleep(SLEEP_TIME);
+
+      // kill timeline
+      // this tests NEXUS-4459: threads will still try to add() or retrieve()
+      // from timeline, even after it is shut down
+      timeline.stop();
+
+      // let them try do some more
+      Thread.sleep(SLEEP_TIME);
+
+      // kill'em
+      for (DeployerThread thread : deployerThreads) {
+        thread.stopAndJoin();
+      }
+
+      // let the searchers run for more
+      Thread.sleep(MAX_SEARCH_SLEEP_TIME);
+
+      // stop them nicely (to pick up last dt thread changes)
+      for (SearcherThread thread : searcherThreads) {
+        thread.stopAndJoin();
+      }
+
+      for (DeployerThread thread : deployerThreads) {
+        assertEquals(thread.getTimelineRecord().getType() + " deployer is not fine!", null,
+            unravelThrowable(thread.getLastException()));
+      }
+
+      for (SearcherThread thread : searcherThreads) {
+        assertEquals(thread.getTypeToSearchFor() + " searcher is not fine!", null,
+            unravelThrowable(thread.getLastException()));
+      }
+
+      for (int i = 0; i < THREAD_COUNT; i++) {
+        assertTrue("Added should be strictly more to found ones (we shot down timeline in the middle!)",
+            deployerThreads.get(i).getAdded() > searcherThreads.get(i).getLastCount());
+      }
     }
-
-    List<SearcherThread> searcherThreads = new ArrayList<SearcherThread>();
-
-    for (int i = 0; i < THREAD_COUNT; i++) {
-      searcherThreads.add(new SearcherThread(timeline, "DT" + (i)));
-    }
-
-    for (DeployerThread thread : deployerThreads) {
-      thread.start();
-    }
-
-    for (SearcherThread thread : searcherThreads) {
-      thread.start();
-    }
-
-    // let them do some work
-    Thread.sleep(SLEEP_TIME);
-
-    // kill timeline
-    // this tests NEXUS-4459: threads will still try to add() or retrieve()
-    // from timeline, even after it is shut down
-    timeline.stop();
-
-    // let them try do some more
-    Thread.sleep(SLEEP_TIME);
-
-    // kill'em
-    for (DeployerThread thread : deployerThreads) {
-      thread.stopAndJoin();
-    }
-
-    // let the searchers run for more
-    Thread.sleep(MAX_SEARCH_SLEEP_TIME);
-
-    // stop them nicely (to pick up last dt thread changes)
-    for (SearcherThread thread : searcherThreads) {
-      thread.stopAndJoin();
-    }
-
-    for (DeployerThread thread : deployerThreads) {
-      assertEquals(thread.getTimelineRecord().getType() + " deployer is not fine!", null,
-          unravelThrowable(thread.getLastException()));
-    }
-
-    for (SearcherThread thread : searcherThreads) {
-      assertEquals(thread.getTypeToSearchFor() + " searcher is not fine!", null,
-          unravelThrowable(thread.getLastException()));
-    }
-
-    for (int i = 0; i < THREAD_COUNT; i++) {
-      assertTrue("Added should be strictly more to found ones (we shot down timeline in the middle!)",
-          deployerThreads.get(i).getAdded() > searcherThreads.get(i).getLastCount());
+    finally {
+      timeline.stop();
     }
   }
 

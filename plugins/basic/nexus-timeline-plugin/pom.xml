@@ -46,19 +46,11 @@
       <scope>provided</scope>
     </dependency>
 
-    <!--
-    FIXME: Use DM.
-    -->
     <dependency>
-      <groupId>com.google.protobuf</groupId>
-      <artifactId>protobuf-java</artifactId>
-      <version>2.3.0</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-core</artifactId>
-      <version>3.6.2</version>
+      <groupId>org.sonatype.nexus.plugins</groupId>
+      <artifactId>nexus-kazuki-plugin</artifactId>
+      <type>${nexus-plugin.type}</type>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>

@@ -20,12 +20,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.sonatype.nexus.NexusAppTestSupport;
+import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
+import org.sonatype.sisu.litmus.testsupport.TestSupport;
 import org.sonatype.timeline.internal.DefaultTimeline;
+import org.sonatype.timeline.internal.guice.TimelineModule;
 
-import org.eclipse.sisu.launch.InjectedTestCase;
+import com.google.inject.Binder;
+import com.google.inject.Module;
+
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public abstract class AbstractTimelineTestCase
-    extends InjectedTestCase
+    extends NexusAppTestSupport
 {
   static {
     // This setting is only checked once per-testsuite and is needed for Nexus tests.
@@ -45,21 +54,21 @@ public abstract class AbstractTimelineTestCase
 
   protected DefaultTimeline timeline;
 
+  protected File workDir;
+
+  @Override
+  protected void customizeModules(final List<Module> modules) {
+    modules.add(new TimelineModule());
+  }
+
   @Override
   protected void setUp()
       throws Exception
   {
     super.setUp();
-
-    timeline = (DefaultTimeline) this.lookup(Timeline.class);
-  }
-
-  @Override
-  public void tearDown()
-      throws Exception
-  {
-    timeline.stop();
-    super.tearDown();
+    workDir = lookup(ApplicationConfiguration.class).getWorkingDirectory("db"); // see org.sonatype.timeline.internal.guice.TimelineModule.JdbiConfigurationProvider.get()
+    cleanDirectory(workDir);
+    timeline = (DefaultTimeline) lookup(Timeline.class);
   }
 
   protected void cleanDirectory(File directory)

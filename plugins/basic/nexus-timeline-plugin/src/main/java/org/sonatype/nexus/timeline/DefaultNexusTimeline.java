@@ -131,9 +131,7 @@ public class DefaultNexusTimeline
   private void updateConfiguration()
       throws IOException
   {
-    final TimelineConfiguration config =
-        new TimelineConfiguration(applicationConfiguration.getWorkingDirectory(TIMELINE_BASEDIR));
-    timeline.start(config);
+    timeline.start(new TimelineConfiguration());
   }
 
   @Override

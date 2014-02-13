@@ -14,16 +14,15 @@
 package org.sonatype.timeline.internal;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import org.sonatype.nexus.util.file.DirSupport;
+import org.sonatype.nexus.timeline.TimelinePlugin;
 import org.sonatype.sisu.goodies.common.ComponentSupport;
 import org.sonatype.timeline.Timeline;
 import org.sonatype.timeline.TimelineCallback;
@@ -31,50 +30,53 @@ import org.sonatype.timeline.TimelineConfiguration;
 import org.sonatype.timeline.TimelineFilter;
 import org.sonatype.timeline.TimelineRecord;
 
+import com.google.common.annotations.VisibleForTesting;
+import io.kazuki.v0.internal.v2schema.Attribute;
+import io.kazuki.v0.internal.v2schema.Schema;
+import io.kazuki.v0.store.KazukiException;
+import io.kazuki.v0.store.journal.JournalStore;
+import io.kazuki.v0.store.keyvalue.KeyValuePair;
+import io.kazuki.v0.store.lifecycle.Lifecycle;
+import io.kazuki.v0.store.schema.SchemaStore;
+import io.kazuki.v0.store.schema.TypeValidation;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+
 @Singleton
 @Named("default")
 public class DefaultTimeline
     extends ComponentSupport
     implements Timeline
 {
-  private volatile boolean started;
+  public static final String TIMELINE_SCHEMA = "timeline";
 
-  private final DefaultTimelinePersistor persistor;
+  private final Lifecycle lifecycle;
 
-  private final DefaultTimelineIndexer indexer;
+  private final JournalStore journalStore;
+
+  private final SchemaStore schemaStore;
 
   private final ReentrantReadWriteLock timelineLock;
 
-  /**
-   * Constructor. See {@link DefaultTimelineIndexer} constructor for meaning of {@code luceneFSDirectoryType}. Note:
-   * The {@code luceneFSDirectoryType} is copied from nexus-indexer-lucene-plugin's DefaultIndexerManager as part of
-   * fix for NEXUS-5658, hence, the key used here must be kept in sync with the one used in DefaultIndexerManager!
-   */
+  private boolean started;
+
   @Inject
-  public DefaultTimeline(@Nullable @Named("${lucene.fsdirectory.type}") final String luceneFSDirectoryType) {
-    this.started = false;
-    this.persistor = new DefaultTimelinePersistor();
-    this.indexer = new DefaultTimelineIndexer(luceneFSDirectoryType);
+  public DefaultTimeline(final @Named(TimelinePlugin.ARTIFACT_ID) Lifecycle lifecycle,
+                         final @Named(TimelinePlugin.ARTIFACT_ID) JournalStore journalStore,
+                         final @Named(TimelinePlugin.ARTIFACT_ID) SchemaStore schemaStore)
+  {
+    this.lifecycle = checkNotNull(lifecycle);
+    this.journalStore = checkNotNull(journalStore);
+    this.schemaStore = checkNotNull(schemaStore);
+
     this.timelineLock = new ReentrantReadWriteLock();
-  }
-
-  /**
-   * Visible for UT
-   */
-  protected DefaultTimelineIndexer getIndexer() {
-    return indexer;
-  }
-
-  /**
-   * Visible for UT
-   */
-  protected DefaultTimelinePersistor getPersistor() {
-    return persistor;
+    this.started = false;
   }
 
   // ==
   // Public API
 
+  @Override
   public void start(final TimelineConfiguration configuration)
       throws IOException
   {
@@ -82,49 +84,28 @@ public class DefaultTimeline
     timelineLock.writeLock().lock();
     try {
       if (!started) {
-        // if persistor fails, it's a total failure, we
-        // cannot work without persistor
-        persistor.setConfiguration(configuration);
+        lifecycle.init();
+        lifecycle.start();
 
-        // indexer start, that might need repair
-        // and might end up in falied repair
-        try {
-          indexer.start(configuration);
+        // create schema if needed
+        if (schemaStore.retrieveSchema(TIMELINE_SCHEMA) == null) {
+          log.info("Creating schema for {} type", TIMELINE_SCHEMA);
+          final Schema schema = new Schema(Collections.<Attribute>emptyList());
+          schemaStore.createSchema(TIMELINE_SCHEMA, schema);
         }
-        catch (IOException e) {
-          // we are starting, so repair must be tried
-          log.info("Timeline index got corrupted, trying to repair it.", e);
-          // stopping it cleanly
-          indexer.stop();
-          // deleting index files
-          DirSupport.empty(configuration.getIndexDirectory().toPath());
-          try {
-            // creating new index from scratch
-            indexer.start(configuration);
-            // pouring over records from persisted into indexer
-            final RepairBatch rb = new RepairBatch(indexer);
-            persistor.readAllSinceDays(configuration.getRepairDaysCountRestored(), rb);
-            rb.finish();
-
-            log.info(
-                "Timeline index is succesfully repaired, the last "
-                    + configuration.getRepairDaysCountRestored() + " days were restored.");
-          }
-          catch (Exception ex) {
-            // do not propagate the exception for indexer
-            // we have persistor started, and that's enough
-            markIndexerDead(ex);
-          }
-        }
-        DefaultTimeline.this.started = true;
         log.info("Started Timeline...");
+        started = true;
       }
+    }
+    catch (KazukiException e) {
+      throw new IOException("Could not start Timeline", e);
     }
     finally {
       timelineLock.writeLock().unlock();
     }
   }
 
+  @Override
   public void stop()
       throws IOException
   {
@@ -132,8 +113,9 @@ public class DefaultTimeline
     timelineLock.writeLock().lock();
     try {
       if (started) {
-        DefaultTimeline.this.started = false;
-        indexer.stop();
+        started = false;
+        lifecycle.shutdown();
+        lifecycle.stop();
         log.info("Stopped Timeline...");
       }
     }
@@ -142,6 +124,7 @@ public class DefaultTimeline
     }
   }
 
+  @VisibleForTesting
   public boolean isStarted() {
     return started;
   }
@@ -152,35 +135,24 @@ public class DefaultTimeline
       return;
     }
     try {
-      persistor.persist(records);
-      addToIndexer(records);
+      for (TimelineRecord record : records) {
+        journalStore.append(TIMELINE_SCHEMA, TimelineRecord.class, record, TypeValidation.STRICT);
+      }
     }
-    catch (IOException e) {
-      log.warn("Failed to add a timeline record", e);
+    catch (KazukiException e) {
+      log.warn("Failed to append a Timeline record", e);
     }
   }
 
   @Override
   public int purgeOlderThan(final int days) {
-    if (started) {
-      return doShared(new Work<Integer>()
-      {
-        @Override
-        public Integer doIt()
-            throws IOException
-        {
-          try {
-            persistor.purge(days);
-          }
-          catch (IOException e) {
-            // we don't want to make indexer dead in here
-            // FIXME: but do we want to abort the purge?
-            log.warn("Failed to purge a timeline persisted records", e);
-          }
-          return indexer.purge(0l, System.currentTimeMillis() - (days * TimeUnit.DAYS.toMillis(days)), null, null);
-        }
-      });
+    if (!started) {
+      return 0;
     }
+    // TODO: How to delete selectively the head of journal? Event if we neglect "days"..
+    // Basically, purge was needed to lessen Lucene index and it's impact on resources.
+    // If Kazuki "behaves" way better, we can simply tell users to remove their "Purge Timeline" tasks
+    // as that task becomes obsolete.
     return 0;
   }
 
@@ -191,84 +163,28 @@ public class DefaultTimeline
     if (!started) {
       return;
     }
-    retrieveFromIndexer(0L, System.currentTimeMillis(), fromItem, count, types, subTypes, filter, callback);
-  }
-
-  // ==
-
-  protected void addToIndexer(final TimelineRecord... records) {
-    doShared(new Work<Void>()
-    {
-      @Override
-      public Void doIt()
-          throws IOException
-      {
-        indexer.addAll(records);
-        return null;
-      }
-    });
-  }
-
-  protected void retrieveFromIndexer(final long fromTime, final long toTime, final int from, final int count,
-                                     final Set<String> types, final Set<String> subTypes,
-                                     final TimelineFilter filter, final TimelineCallback callback)
-  {
-    doShared(new Work<Void>()
-    {
-      @Override
-      public Void doIt()
-          throws IOException
-      {
-        indexer.retrieve(fromTime, toTime, types, subTypes, from, count, filter, callback);
-        return null;
-      }
-    });
-  }
-
-  // ==
-
-  protected static interface Work<E>
-  {
-
-    E doIt()
-        throws IOException;
-
-  }
-
-  protected <E> E doShared(final Work<E> work) {
-    if (timelineLock.readLock().tryLock()) {
-      try {
-        if (started && !indexerIsDead) {
-          try {
-            return work.doIt();
-          }
-          catch (IOException e) {
-            markIndexerDead(e);
-          }
+    try {
+      final Iterable<KeyValuePair<TimelineRecord>> kvs = journalStore
+          .entriesRelative(TIMELINE_SCHEMA, TimelineRecord.class, (long) fromItem, (long) count);
+      for (KeyValuePair<TimelineRecord> kv : kvs) {
+        final TimelineRecord record = kv.getValue();
+        if (types != null && !types.contains(record.getType())) {
+          continue; // skip it
+        }
+        if (subTypes != null && !subTypes.contains(record.getSubType())) {
+          continue; // skip it
+        }
+        if (filter != null && !filter.accept(record)) {
+          callback.processNext(record);
         }
       }
-      finally {
-        timelineLock.readLock().unlock();
-      }
     }
-    return null;
-  }
-
-  // ==
-
-  private volatile boolean indexerIsDead = false;
-
-  protected void markIndexerDead(final Exception e) {
-    if (!indexerIsDead) {
-      log.warn("Timeline index got corrupted and is disabled. Repair will be tried on next boot.", e);
-      // we need to stop it and signal to not try any other thread
-      indexerIsDead = true;
-      try {
-        indexer.stop();
-      }
-      catch (IOException ex) {
-        log.warn("Timeline index can't be stopped cleanly after it's corruption.", ex);
-      }
+    catch (IOException e) {
+      log.warn("Failed to process Timeline record in callback", e);
+    }
+    catch (KazukiException e) {
+      log.warn("Failed to iterate Timeline store", e);
     }
   }
+
 }

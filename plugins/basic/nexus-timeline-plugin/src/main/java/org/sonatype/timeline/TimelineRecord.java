@@ -16,6 +16,9 @@ package org.sonatype.timeline;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class TimelineRecord
 {
   private final long timestamp;
@@ -26,7 +29,12 @@ public class TimelineRecord
 
   private final HashMap<String, String> data;
 
-  public TimelineRecord(final long timestamp, final String type, final String subType, final Map<String, String> data) {
+  @JsonCreator
+  public TimelineRecord(@JsonProperty("timestamp") final long timestamp,
+                        @JsonProperty("type") final String type,
+                        @JsonProperty("subType") final String subType,
+                        @JsonProperty("data") final Map<String, String> data)
+  {
     if (type == null || type.trim().length() == 0 || subType == null || subType.trim().length() == 0) {
       throw new IllegalArgumentException("TimelineRecord type or subType must not be blank/null");
     }
