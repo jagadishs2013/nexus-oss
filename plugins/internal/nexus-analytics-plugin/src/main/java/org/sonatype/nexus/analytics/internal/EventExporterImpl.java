@@ -45,6 +45,7 @@ import com.google.common.cache.CacheBuilder;
 import io.kazuki.v0.store.journal.JournalStore;
 import io.kazuki.v0.store.journal.PartitionInfo;
 import io.kazuki.v0.store.journal.PartitionInfoSnapshot;
+import io.kazuki.v0.store.keyvalue.KeyValueIterable;
 import io.kazuki.v0.store.keyvalue.KeyValuePair;
 import org.apache.commons.lang.time.StopWatch;
 
@@ -166,37 +167,38 @@ public class EventExporterImpl
       writeHeader(jsonFactory, output);
 
       // write each partition to its own file in the zip
-      Iterable<PartitionInfoSnapshot> partitions = journal.getAllPartitions();
-      for (PartitionInfo partition : partitions) {
-        if (!partition.isClosed()) {
-          // skip new open partitions, this is new data _after_ the export was requested
-          break;
-        }
-        partitionCount++;
+      try (KeyValueIterable<PartitionInfoSnapshot> partitions = journal.getAllPartitions()) {
+        for (PartitionInfo partition : partitions) {
+          if (!partition.isClosed()) {
+            // skip new open partitions, this is new data _after_ the export was requested
+            break;
+          }
+          partitionCount++;
 
-        // new entry in the zip for each partition
-        ZipEntry zipEntry = new ZipEntry("events-" + partitionCount + ".json");
-        output.putNextEntry(zipEntry);
-        log.debug("Writing entry: {}, partition: {} w/{} records",
-            zipEntry.getName(), partition.getPartitionId(), partition.getSize());
+          // new entry in the zip for each partition
+          ZipEntry zipEntry = new ZipEntry("events-" + partitionCount + ".json");
+          output.putNextEntry(zipEntry);
+          log.debug("Writing entry: {}, partition: {} w/{} records",
+              zipEntry.getName(), partition.getPartitionId(), partition.getSize());
 
-        JsonGenerator generator = jsonFactory.createGenerator(output);
-        generator.writeStartArray();
+          JsonGenerator generator = jsonFactory.createGenerator(output);
+          generator.writeStartArray();
 
-        Iterable<KeyValuePair<EventData>> iter = journal.entriesRelative(
-            EventStore.SCHEMA_NAME, EventData.class, 0L, partition.getSize());
+          try (KeyValueIterable<KeyValuePair<EventData>> iter = journal.entriesRelative(
+              EventStore.SCHEMA_NAME, EventData.class, 0L, partition.getSize())) {
+            for (KeyValuePair<EventData> entry : iter) {
+              generator.writeObject(anonymizerHelper.anonymize(entry.getValue()));
+              eventCount++;
+            }
+          }
 
-        for (KeyValuePair<EventData> entry : iter) {
-          generator.writeObject(anonymizerHelper.anonymize(entry.getValue()));
-          eventCount++;
-        }
+          generator.writeEndArray();
+          generator.flush();
+          output.closeEntry();
 
-        generator.writeEndArray();
-        generator.flush();
-        output.closeEntry();
-
-        if (dropAfterExport) {
-          journal.dropPartition(partition.getPartitionId());
+          if (dropAfterExport) {
+            journal.dropPartition(partition.getPartitionId());
+          }
         }
       }
     }

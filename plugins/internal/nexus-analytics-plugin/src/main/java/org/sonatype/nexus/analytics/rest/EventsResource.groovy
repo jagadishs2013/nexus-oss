@@ -15,6 +15,7 @@ package org.sonatype.nexus.analytics.rest
 
 import com.yammer.metrics.annotation.Timed
 import io.kazuki.v0.store.keyvalue.KeyValuePair
+import io.kazuki.v0.store.keyvalue.KeyValueIterable
 import org.apache.shiro.authz.annotation.RequiresPermissions
 import org.sonatype.nexus.analytics.EventData
 import org.sonatype.nexus.analytics.EventExporter
@@ -99,19 +100,28 @@ class EventsResource
     List<EventData> events = []
     def count = 0
 
-    for (KeyValuePair<EventData> entry : eventStore.iterator(start, limit)) {
-      def event = entry.value
+    KeyValueIterable<KeyValuePair<EventData>> eventEntries = null
+    try {
+      eventEntries = (eventStore.iterator(start, limit))
 
-      // strip non-anonymized sensitive data
-      if (event.sessionId) {
-        event.sessionId = 'stripped'
+      for (KeyValuePair<EventData> entry : eventEntries) {
+        def event = entry.value
+
+        // strip non-anonymized sensitive data
+        if (event.sessionId) {
+          event.sessionId = 'stripped'
+        }
+        // NOTE: userId is not anonymized here, but will be in exported data
+
+        events << event
+        count++
+        if (limit > 0 && count >= limit) {
+          break
+        }
       }
-      // NOTE: userId is not anonymized here, but will be in exported data
-
-      events << event
-      count++
-      if (limit > 0 && count >= limit) {
-        break
+    } finally {
+      if (eventEntries != null) {
+        eventEntries.close()
       }
     }
 

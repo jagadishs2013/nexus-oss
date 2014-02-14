@@ -14,6 +14,7 @@ package org.sonatype.nexus.analytics;
 
 import javax.annotation.Nullable;
 
+import io.kazuki.v0.store.keyvalue.KeyValueIterable;
 import io.kazuki.v0.store.keyvalue.KeyValuePair;
 
 /**
@@ -31,5 +32,5 @@ public interface EventStore
 
   long approximateSize() throws Exception;
 
-  Iterable<KeyValuePair<EventData>> iterator(long offset, @Nullable Long limit) throws Exception;
+  KeyValueIterable<KeyValuePair<EventData>> iterator(long offset, @Nullable Long limit) throws Exception;
 }
