@@ -191,13 +191,13 @@ public class EventExporterImpl
           eventCount++;
         }
 
-        if (dropAfterExport) {
-          journal.dropPartition(partition.getPartitionId());
-        }
-
         generator.writeEndArray();
         generator.flush();
         output.closeEntry();
+
+        if (dropAfterExport) {
+          journal.dropPartition(partition.getPartitionId());
+        }
       }
     }
 
