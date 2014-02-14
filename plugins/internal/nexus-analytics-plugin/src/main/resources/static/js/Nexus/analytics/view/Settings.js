@@ -74,14 +74,6 @@ NX.define('Nexus.analytics.view.Settings', {
               text: 'Save',
               id: 'nx-analytics-view-settings-button-save',
               formBind: true
-            },
-            {
-              xtype: 'link-button',
-              text: 'Discard',
-              formBind: false,
-              handler: function(button, event) {
-                button.up('form').getForm().reset();
-              }
             }
           ]
         }

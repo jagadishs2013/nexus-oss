@@ -67,7 +67,15 @@ NX.define('Nexus.analytics.view.Panel', {
             { xtype: 'nx-analytics-view-settings' },
             { xtype: 'nx-analytics-view-events' }
           ],
-          activeTab: 0
+          activeTab: 0,
+
+          listeners: {
+            afterrender: function(tabpanel) {
+              // default to have the events tab hidden
+              var tab = me.down('nx-analytics-view-events');
+              tabpanel.hideTabStripItem(tab);
+            }
+          }
         }
       ]
     });

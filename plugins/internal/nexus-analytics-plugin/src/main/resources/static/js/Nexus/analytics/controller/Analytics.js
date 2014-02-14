@@ -31,23 +31,26 @@ NX.define('Nexus.analytics.controller.Analytics', {
     var me = this;
 
     me.control({
-      '#nx-analytics-view-events': {
-        'activate': me.loadEvents
-      },
-      '#nx-analytics-view-events-button-refresh': {
-        'click': me.refreshEvents
-      },
-      '#nx-analytics-view-events-button-clear': {
-        'click': me.clearEvents
-      },
-      '#nx-analytics-view-events-button-export': {
-        'click': me.exportEvents
-      },
-      '#nx-analytics-view-events-button-submit': {
-        'click': me.submitEvents
+      '#nx-analytics-view-settings': {
+        activate: me.loadSettings
       },
       '#nx-analytics-view-settings-button-save': {
         click: me.saveSettings
+      },
+      '#nx-analytics-view-events': {
+        activate: me.loadEvents
+      },
+      '#nx-analytics-view-events-button-refresh': {
+        click: me.refreshEvents
+      },
+      '#nx-analytics-view-events-button-clear': {
+        click: me.clearEvents
+      },
+      '#nx-analytics-view-events-button-export': {
+        click: me.exportEvents
+      },
+      '#nx-analytics-view-events-button-submit': {
+        click: me.submitEvents
       }
     });
 
@@ -87,6 +90,38 @@ NX.define('Nexus.analytics.controller.Analytics', {
   /**
    * @private
    */
+  loadSettings: function() {
+    var me = this;
+
+    me.logDebug('Loading settings');
+
+    Ext.Ajax.request({
+      url: Nexus.siesta.basePath + '/analytics/settings',
+      method: 'GET',
+
+      scope: me,
+      success: function (response, opts) {
+        me.logDebug('Settings: ' + response.responseText);
+        var values = Ext.decode(response.responseText);
+
+        Ext.getCmp('nx-analytics-view-settings').setValues(values);
+
+        // show/hide the events tab if collection is enabled/disabled
+        var tabpanel = Ext.getCmp('analytics').down('tabpanel');
+        var eventsview = Ext.getCmp('nx-analytics-view-events');
+        if (values.collection === true) {
+          tabpanel.unhideTabStripItem(eventsview);
+        }
+        else {
+          tabpanel.hideTabStripItem(eventsview);
+        }
+      }
+    });
+  },
+
+  /**
+   * @private
+   */
   saveSettings: function(button) {
     var me = this,
         values = Ext.getCmp('nx-analytics-view-settings').getValues();
@@ -101,6 +136,9 @@ NX.define('Nexus.analytics.controller.Analytics', {
       scope: me,
       success: function () {
         me.showMessage('Settings saved');
+
+        // reload settings to apply view customiztions
+        me.loadSettings();
       }
     });
   },
