@@ -16,6 +16,7 @@ package org.sonatype.nexus.analytics.internal;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.file.Files;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
@@ -29,6 +30,7 @@ import org.sonatype.nexus.analytics.Anonymizer;
 import org.sonatype.nexus.analytics.EventData;
 import org.sonatype.nexus.analytics.EventExporter;
 import org.sonatype.nexus.analytics.EventStore;
+import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
 import org.sonatype.sisu.goodies.common.ComponentSupport;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -61,14 +63,20 @@ public class EventExporterImpl
 
   private final Anonymizer anonymizer;
 
+  private final File supportDir;
+
   private final ReentrantLock exportLock = new ReentrantLock();
 
   @Inject
-  public EventExporterImpl(final EventStoreImpl eventStore,
+  public EventExporterImpl(final ApplicationConfiguration applicationConfiguration,
+                           final EventStoreImpl eventStore,
                            final Anonymizer anonymizer)
   {
     this.eventStore = checkNotNull(eventStore);
     this.anonymizer = checkNotNull(anonymizer);
+
+    this.supportDir = applicationConfiguration.getWorkingDirectory("support");
+    log.info("Support directory: {}", supportDir);
   }
 
   /**
@@ -120,7 +128,7 @@ public class EventExporterImpl
   private File doExport(final boolean dropAfterExport) throws Exception {
     log.info("Exporting; dropAfterExport: {}", dropAfterExport);
 
-    // TODO: Skip if there are no events
+    // TODO: Skip if there are no events, perhaps should be done outside and/or make return nullable?
 
     StopWatch watch = new StopWatch();
     watch.start();
@@ -132,7 +140,7 @@ public class EventExporterImpl
 
     // TODO: Sort out max for each zip file
     File file = File.createTempFile("analytics-", ".zip");
-    log.info("Exporting to: {}", file);
+    log.debug("Exporting to: {}", file);
 
     ObjectMapper mapper = new ObjectMapper();
     mapper.enable(SerializationFeature.INDENT_OUTPUT);
@@ -182,9 +190,12 @@ public class EventExporterImpl
         output.closeEntry();
       }
     }
-    // TODO: Move file to support dir
 
-    log.info("Exported {} partitions, {} events to: {}, took: {}", partitionCount, eventCount, file, watch);
+    // Move completed export file into place
+    File target = new File(supportDir, file.getName()); // TODO: analytics-{yyyyMMdd-HHmmss}.zip for target
+    Files.move(file.toPath(), target.toPath());
+
+    log.info("Exported {} partitions, {} events to: {}, took: {}", partitionCount, eventCount, target, watch);
     return file;
   }
 }
