@@ -70,7 +70,7 @@ class SettingsResource
   @ToString(includePackage = false, includeNames = true)
   static class SettingsXO
   {
-    // NOTE: Using java.lang.Boolean here to prevent Jacons issues marshalling due to Groovy generated getters :-(
+    // NOTE: Using java.lang.Boolean here to prevent Jackson issues marshalling due to Groovy generated getters :-(
 
     Boolean collection = false
 
