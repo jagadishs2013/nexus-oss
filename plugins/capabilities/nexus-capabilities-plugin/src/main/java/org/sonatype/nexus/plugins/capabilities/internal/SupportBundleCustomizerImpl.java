@@ -16,7 +16,6 @@ package org.sonatype.nexus.plugins.capabilities.internal;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 
 import javax.inject.Inject;
@@ -30,8 +29,6 @@ import org.sonatype.nexus.atlas.SupportBundleCustomizer;
 import org.sonatype.nexus.plugins.capabilities.internal.config.persistence.io.xpp3.NexusCapabilitiesConfigurationXpp3Writer;
 import org.sonatype.nexus.plugins.capabilities.internal.storage.CapabilityStorageConverter;
 import org.sonatype.sisu.goodies.common.ComponentSupport;
-
-import com.google.common.base.Throwables;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -62,17 +59,12 @@ public class SupportBundleCustomizerImpl
     // for now we generate an capabilities.xml out of kazuki
     supportBundle.add(new GeneratedContentSourceSupport(Type.CONFIG, "work/conf/capabilities.xml")
     {
-
       @Override
-      protected void generate(final File file) {
+      protected void generate(final File file) throws Exception {
         try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
           new NexusCapabilitiesConfigurationXpp3Writer().write(out, converter.convertFromKazuki());
         }
-        catch (IOException e) {
-          throw Throwables.propagate(e);
-        }
       }
-
     });
   }
 
