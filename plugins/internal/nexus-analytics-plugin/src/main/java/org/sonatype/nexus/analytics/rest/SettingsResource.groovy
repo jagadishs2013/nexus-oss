@@ -15,9 +15,16 @@ package org.sonatype.nexus.analytics.rest
 
 import groovy.transform.ToString
 import org.apache.shiro.authz.annotation.RequiresPermissions
+import org.sonatype.nexus.analytics.internal.AutoSubmitCapabilityDescriptor
+import org.sonatype.nexus.analytics.internal.CollectionCapabilityDescriptor
+import org.sonatype.nexus.plugins.capabilities.CapabilityReference
+import org.sonatype.nexus.plugins.capabilities.CapabilityRegistry
+import org.sonatype.nexus.plugins.capabilities.CapabilityType
+import org.sonatype.nexus.plugins.capabilities.support.CapabilityReferenceFilterBuilder
 import org.sonatype.sisu.goodies.common.ComponentSupport
 import org.sonatype.sisu.siesta.common.Resource
 
+import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
 import javax.ws.rs.Consumes
@@ -41,6 +48,25 @@ class SettingsResource
 {
   static final String RESOURCE_URI = '/analytics/settings'
 
+  @Inject
+  CapabilityRegistry capabilities
+
+  private CapabilityReference capabilityReference(CapabilityType type) {
+    def refs = capabilities.get(CapabilityReferenceFilterBuilder.capabilities().withType(type))
+    assert !refs.isEmpty(), "Required capability has been removed; type: $type"
+    return refs.iterator().next()
+  }
+
+  private void toggleCapabilityEnabled(CapabilityType type, boolean enable) {
+    def ref = capabilityReference(type)
+    if (enable) {
+      capabilities.enable(ref.context().id());
+    }
+    else {
+      capabilities.disable(ref.context().id());
+    }
+  }
+
   @ToString(includePackage = false, includeNames = true)
   static class SettingsXO
   {
@@ -54,8 +80,8 @@ class SettingsResource
   @RequiresPermissions('nexus:analytics')
   SettingsXO get() {
     return new SettingsXO(
-        collection: false,
-        autosubmit: false
+        collection: capabilityReference(CollectionCapabilityDescriptor.TYPE).context().enabled,
+        autosubmit: capabilityReference(AutoSubmitCapabilityDescriptor.TYPE).context().enabled
     )
   }
 
@@ -64,5 +90,8 @@ class SettingsResource
   @RequiresPermissions('nexus:analytics')
   void put(SettingsXO settings) {
     log.info("Update settings: $settings")
+
+    toggleCapabilityEnabled(CollectionCapabilityDescriptor.TYPE, settings.collection)
+    toggleCapabilityEnabled(AutoSubmitCapabilityDescriptor.TYPE, settings.autosubmit)
   }
 }
