@@ -46,22 +46,23 @@ NX.define('Nexus.analytics.view.Settings', {
       items: [
         {
           xtype: 'form',
-          id: 'nx-analytics-view-settings-form',
           border: false,
           style: {
             padding: '10px'
+          },
+          defaults: {
+            hideLabel: true,
+            inputValue: 'true' // use 'true' instead of 'on'
           },
           items: [
             {
               xtype: 'checkbox',
               name: 'collection',
-              hideLabel: true,
               boxLabel: 'Enable analytics event collection'
             },
             {
               xtype: 'checkbox',
               name: 'autosubmit',
-              hideLabel: true,
               boxLabel: 'Enable automatic analytics event submission to Sonatype'
             }
           ],
@@ -88,5 +89,23 @@ NX.define('Nexus.analytics.view.Settings', {
     });
 
     me.constructor.superclass.initComponent.apply(me, arguments);
+  },
+
+  /**
+   * Get form values.
+   *
+   * @public
+   */
+  getValues: function () {
+    return this.down('form').getForm().getValues();
+  },
+
+  /**
+   * Set form values.
+   *
+   * @public
+   */
+  setValues: function(values) {
+    this.down('form').getForm().setValues(values);
   }
 });

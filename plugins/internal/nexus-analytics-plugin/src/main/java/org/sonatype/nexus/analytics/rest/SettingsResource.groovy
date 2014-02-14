@@ -13,6 +13,7 @@
 
 package org.sonatype.nexus.analytics.rest
 
+import groovy.transform.ToString
 import org.apache.shiro.authz.annotation.RequiresPermissions
 import org.sonatype.sisu.goodies.common.ComponentSupport
 import org.sonatype.sisu.siesta.common.Resource
@@ -40,21 +41,28 @@ class SettingsResource
 {
   static final String RESOURCE_URI = '/analytics/settings'
 
+  @ToString(includePackage = false, includeNames = true)
+  static class SettingsXO
+  {
+    boolean collection
+
+    boolean autosubmit
+  }
+
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @RequiresPermissions('nexus:analytics')
-  Map get() {
-    // TODO: for now just return something
-    return [
+  SettingsXO get() {
+    return new SettingsXO(
         collection: false,
-        reporting: false
-    ]
+        autosubmit: false
+    )
   }
 
   @PUT
   @Consumes(MediaType.APPLICATION_JSON)
   @RequiresPermissions('nexus:analytics')
-  void put(Map settings) {
-    // TODO
+  void put(SettingsXO settings) {
+    log.info("Update settings: $settings")
   }
 }

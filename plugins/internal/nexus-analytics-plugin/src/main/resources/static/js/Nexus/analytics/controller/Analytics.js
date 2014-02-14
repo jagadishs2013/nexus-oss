@@ -88,11 +88,21 @@ NX.define('Nexus.analytics.controller.Analytics', {
    * @private
    */
   saveSettings: function(button) {
-    var me = this;
+    var me = this,
+        values = Ext.getCmp('nx-analytics-view-settings').getValues();
 
-    // TODO:
+    me.logDebug('Saving settings: ' + Ext.util.JSON.encode(values));
 
-    me.showMessage('Settings saved');
+    Ext.Ajax.request({
+      url: Nexus.siesta.basePath + '/analytics/settings',
+      method: 'PUT',
+      jsonData: values,
+
+      scope: me,
+      success: function () {
+        me.showMessage('Settings saved');
+      }
+    });
   },
 
   /**
