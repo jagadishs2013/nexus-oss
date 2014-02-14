@@ -26,9 +26,12 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
+import org.sonatype.nexus.ApplicationStatusSource;
+import org.sonatype.nexus.SystemStatus;
 import org.sonatype.nexus.analytics.Anonymizer;
 import org.sonatype.nexus.analytics.EventData;
 import org.sonatype.nexus.analytics.EventExporter;
+import org.sonatype.nexus.analytics.EventHeader;
 import org.sonatype.nexus.analytics.EventStore;
 import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
 import org.sonatype.sisu.goodies.common.ComponentSupport;
@@ -65,10 +68,13 @@ public class EventExporterImpl
 
   private final File supportDir;
 
+  private final String product;
+
   private final ReentrantLock exportLock = new ReentrantLock();
 
   @Inject
   public EventExporterImpl(final ApplicationConfiguration applicationConfiguration,
+                           final ApplicationStatusSource applicationStatusSource,
                            final EventStoreImpl eventStore,
                            final Anonymizer anonymizer)
   {
@@ -77,6 +83,10 @@ public class EventExporterImpl
 
     this.supportDir = applicationConfiguration.getWorkingDirectory("support");
     log.info("Support directory: {}", supportDir);
+
+    SystemStatus status = applicationStatusSource.getSystemStatus();
+    this.product = String.format("nexus-%s/%s", status.getEditionShort(), status.getVersion());
+    log.info("Product: {}", product);
   }
 
   /**
@@ -153,7 +163,7 @@ public class EventExporterImpl
     try (ZipOutputStream output = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(file)))) {
       output.setLevel(Deflater.DEFAULT_COMPRESSION);
 
-      // TODO: Write out a EventHeader to header.json
+      writeHeader(jsonFactory, output);
 
       // write each partition to its own file in the zip
       Iterable<PartitionInfoSnapshot> partitions = journal.getAllPartitions();
@@ -197,5 +207,20 @@ public class EventExporterImpl
 
     log.info("Exported {} partitions, {} events to: {}, took: {}", partitionCount, eventCount, target, watch);
     return file;
+  }
+
+  private void writeHeader(final JsonFactory jsonFactory, final ZipOutputStream output) throws Exception {
+    EventHeader header = new EventHeader();
+    header.setFormat("zip-bundle/1");
+    header.setProduct(product);
+    // TODO: Add org, node (, attributes?)
+
+    ZipEntry zipEntry = new ZipEntry("header.json");
+    output.putNextEntry(zipEntry);
+
+    JsonGenerator generator = jsonFactory.createGenerator(output);
+    generator.writeObject(header);
+    generator.flush();
+    output.closeEntry();
   }
 }
