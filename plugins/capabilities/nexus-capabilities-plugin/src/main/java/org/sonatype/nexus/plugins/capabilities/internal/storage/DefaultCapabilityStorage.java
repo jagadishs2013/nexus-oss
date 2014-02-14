@@ -117,12 +117,12 @@ public class DefaultCapabilityStorage
     return items;
   }
 
-  private static Key asKey(final CapabilityIdentity id) {
-    return new Key(CAPABILITY_SCHEMA, Long.valueOf(id.toString()));
+  private Key asKey(final CapabilityIdentity id) {
+    return keyValueStore.toKey("@" + CAPABILITY_SCHEMA + ":" + id.toString());
   }
 
-  private static CapabilityIdentity asCapabilityIdentity(final Key key) {
-    return new CapabilityIdentity(String.valueOf(key.getId()));
+  private CapabilityIdentity asCapabilityIdentity(final Key key) {
+    return new CapabilityIdentity(key.getIdPart());
   }
 
 }
