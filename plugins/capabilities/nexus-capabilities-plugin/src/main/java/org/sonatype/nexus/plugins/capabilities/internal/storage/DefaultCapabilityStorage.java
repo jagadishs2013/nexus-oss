@@ -107,13 +107,14 @@ public class DefaultCapabilityStorage
   public Map<CapabilityIdentity, CapabilityStorageItem> getAll() throws IOException {
     Map<CapabilityIdentity, CapabilityStorageItem> items = Maps.newHashMap();
 
-    KeyValueIterable<KeyValuePair<CapabilityStorageItem>> entries = keyValueStore.iterators().entries(
+    try (KeyValueIterable<KeyValuePair<CapabilityStorageItem>> entries = keyValueStore.iterators().entries(
         CAPABILITY_SCHEMA, CapabilityStorageItem.class
-    );
-
-    for (KeyValuePair<CapabilityStorageItem> entry : entries) {
-      items.put(asCapabilityIdentity(entry.getKey()), entry.getValue());
+    )) {
+      for (KeyValuePair<CapabilityStorageItem> entry : entries) {
+        items.put(asCapabilityIdentity(entry.getKey()), entry.getValue());
+      }
     }
+
     return items;
   }
 
