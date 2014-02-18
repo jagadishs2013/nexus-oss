@@ -20,50 +20,50 @@ import java.util.List;
 import java.util.Set;
 
 import org.sonatype.nexus.NexusAppTestSupport;
+import org.sonatype.timeline.internal.guice.TimelineModule;
 
 import com.google.common.base.Predicate;
+import com.google.inject.Module;
+import org.junit.After;
 import org.junit.Test;
 
 public class DefaultNexusTimelineTest
     extends NexusAppTestSupport
 {
-  protected NexusTimeline nexusTimeline;
-
-  protected void setUp()
-      throws Exception
-  {
-    super.setUp();
-
-    nexusTimeline = (NexusTimeline) this.lookup(NexusTimeline.class);
+  @Override
+  protected void customizeModules(final List<Module> modules) {
+    modules.add(new TimelineModule());
   }
 
-  protected void tearDown()
-      throws Exception
+  @Override
+  protected void tearDown() throws Exception
   {
+    lookup(NexusTimeline.class).shutdown();
     super.tearDown();
   }
+
 
   /**
    * Handy method that does what was done before: keeps all in memory, but this is usable for small amount of data,
    * like these in UT. This should NOT be used in production code, unless you want app that kills itself with OOM.
    */
   protected List<Entry> asList(int fromItem, int count, Set<String> types, Set<String> subTypes,
-                               Predicate<Entry> filter)
+                               Predicate<Entry> filter) throws Exception
   {
     final EntryListCallback result = new EntryListCallback();
-    nexusTimeline.retrieve(fromItem, count, types, subTypes, filter, result);
+    lookup(NexusTimeline.class).retrieve(fromItem, count, types, subTypes, filter, result);
     return result.getEntries();
   }
 
   @Test
-  public void testSimpleTimestamp() {
+  public void testSimpleTimestamp() throws Exception {
     HashMap<String, String> data = new HashMap<String, String>();
     data.put("a", "a");
     data.put("b", "b");
 
-    nexusTimeline.add(System.currentTimeMillis() - 1L * 60L * 60L * 1000L, "TEST", "1", data);
+    lookup(NexusTimeline.class).add(System.currentTimeMillis() - 1L * 60L * 60L * 1000L, "TEST", "1", data);
 
-    nexusTimeline.add(System.currentTimeMillis() - 1L * 60L * 60L * 1000L, "TEST", "2", data);
+    lookup(NexusTimeline.class).add(System.currentTimeMillis() - 1L * 60L * 60L * 1000L, "TEST", "2", data);
 
     List<Entry> res =
         asList(1, 10, new HashSet<String>(Arrays.asList(new String[]{"TEST"})),
@@ -89,14 +89,14 @@ public class DefaultNexusTimelineTest
   }
 
   @Test
-  public void testSimpleItem() {
+  public void testSimpleItem() throws Exception {
     HashMap<String, String> data = new HashMap<String, String>();
     data.put("a", "a");
     data.put("b", "b");
 
-    nexusTimeline.add(System.currentTimeMillis() - 1L * 60L * 60L * 1000L, "TEST", "1", data);
+    lookup(NexusTimeline.class).add(System.currentTimeMillis() - 1L * 60L * 60L * 1000L, "TEST", "1", data);
 
-    nexusTimeline.add(System.currentTimeMillis() - 1L * 60L * 60L * 1000L, "TEST", "2", data);
+    lookup(NexusTimeline.class).add(System.currentTimeMillis() - 1L * 60L * 60L * 1000L, "TEST", "2", data);
 
     List<Entry> res = asList(0, 10, new HashSet<String>(Arrays.asList(new String[]{"TEST"})), null, null);
 
@@ -144,16 +144,16 @@ public class DefaultNexusTimelineTest
   }
 
   @Test
-  public void testOrder() {
+  public void tetOrder() throws Exception {
     HashMap<String, String> data = new HashMap<String, String>();
     data.put("place", "2nd");
     data.put("x", "y");
 
-    nexusTimeline.add(System.currentTimeMillis() - 2L * 60L * 60L * 1000L, "TEST", "1", data);
+    lookup(NexusTimeline.class).add(System.currentTimeMillis() - 2L * 60L * 60L * 1000L, "TEST", "1", data);
 
     data.put("place", "1st");
 
-    nexusTimeline.add(System.currentTimeMillis() - 1L * 60L * 60L * 1000L, "TEST", "1", data);
+    lookup(NexusTimeline.class).add(System.currentTimeMillis() - 1L * 60L * 60L * 1000L, "TEST", "1", data);
 
     List<Entry> res =
         asList(0, 10, new HashSet<String>(Arrays.asList(new String[]{"TEST"})),

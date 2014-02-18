@@ -18,6 +18,8 @@ import org.sonatype.nexus.auth.NexusAuthenticationEvent;
 import org.sonatype.nexus.configuration.application.NexusConfiguration;
 import org.sonatype.nexus.feeds.record.NexusAuthenticationEventInspector;
 import org.sonatype.nexus.test.NexusTestSupport;
+import org.sonatype.sisu.litmus.testsupport.TestSupport;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -31,7 +33,7 @@ import static org.mockito.Mockito.when;
  * Tests for {@link NexusAuthenticationEventInspector}.
  */
 public class NexusAuthenticationEventInspectorTest
-    extends NexusTestSupport
+    extends TestSupport
 {
   private NexusAuthenticationEventInspector underTest;
 

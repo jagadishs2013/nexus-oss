@@ -19,16 +19,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-
 public class TimelineTest
     extends AbstractTimelineTestCase
 {
 
-  @Test
-  public void testConfigureTimeline()
+  public void testConfiguration()
       throws Exception
   {
     try {
@@ -39,7 +34,6 @@ public class TimelineTest
     }
   }
 
-  @Test
   public void testSimpleAddAndRetrieve()
       throws Exception
   {

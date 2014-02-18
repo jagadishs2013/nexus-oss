@@ -22,16 +22,10 @@ import java.util.Map;
 
 import org.sonatype.nexus.NexusAppTestSupport;
 import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
-import org.sonatype.sisu.litmus.testsupport.TestSupport;
 import org.sonatype.timeline.internal.DefaultTimeline;
 import org.sonatype.timeline.internal.guice.TimelineModule;
 
-import com.google.inject.Binder;
 import com.google.inject.Module;
-
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public abstract class AbstractTimelineTestCase
     extends NexusAppTestSupport
@@ -66,7 +60,8 @@ public abstract class AbstractTimelineTestCase
       throws Exception
   {
     super.setUp();
-    workDir = lookup(ApplicationConfiguration.class).getWorkingDirectory("db"); // see org.sonatype.timeline.internal.guice.TimelineModule.JdbiConfigurationProvider.get()
+    workDir = lookup(ApplicationConfiguration.class).getWorkingDirectory(
+        "db"); // see org.sonatype.timeline.internal.guice.TimelineModule.JdbiConfigurationProvider.get()
     cleanDirectory(workDir);
     timeline = (DefaultTimeline) lookup(Timeline.class);
   }
