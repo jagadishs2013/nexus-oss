@@ -13,10 +13,7 @@
 
 package org.sonatype.nexus.timeline;
 
-import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.Map;
 import java.util.Set;
 
@@ -24,8 +21,6 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import org.sonatype.nexus.configuration.application.ApplicationConfiguration;
-import org.sonatype.nexus.util.file.DirSupport;
 import org.sonatype.sisu.goodies.common.ComponentSupport;
 import org.sonatype.timeline.Timeline;
 import org.sonatype.timeline.TimelineCallback;
@@ -49,28 +44,12 @@ public class DefaultNexusTimeline
     extends ComponentSupport
     implements NexusTimeline
 {
-
-  private static final String TIMELINE_BASEDIR = "timeline";
-
   private final Timeline timeline;
 
-  private final ApplicationConfiguration applicationConfiguration;
-
   @Inject
-  public DefaultNexusTimeline(final Timeline timeline,
-                              final ApplicationConfiguration applicationConfiguration)
-  {
+  public DefaultNexusTimeline(final Timeline timeline) {
     this.timeline = checkNotNull(timeline);
-    this.applicationConfiguration = checkNotNull(applicationConfiguration);
 
-    try {
-      log.info("Initializing Nexus Timeline...");
-
-      moveLegacyTimeline();
-    }
-    catch (IOException e) {
-      throw new RuntimeException("Unable to move legacy Timeline!", e);
-    }
     try {
       log.info("Starting Nexus Timeline...");
       updateConfiguration();
@@ -88,43 +67,6 @@ public class DefaultNexusTimeline
     }
     catch (IOException e) {
       throw new RuntimeException("Unable to cleanly stop Timeline!", e);
-    }
-  }
-
-  private void moveLegacyTimeline()
-      throws IOException
-  {
-    File timelineDir = applicationConfiguration.getWorkingDirectory(TIMELINE_BASEDIR);
-
-    File legacyIndexDir = timelineDir;
-
-    File newIndexDir = new File(timelineDir, "index");
-
-    File[] legacyIndexFiles = legacyIndexDir.listFiles(new FileFilter()
-    {
-      public boolean accept(File file) {
-        return file.isFile();
-      }
-    });
-
-    if (legacyIndexFiles == null || legacyIndexFiles.length == 0) {
-      return;
-    }
-
-    if (newIndexDir.exists() && newIndexDir.listFiles().length > 0) {
-      return;
-    }
-
-    log.info(
-        "Moving legacy timeline index from '" + legacyIndexDir.getAbsolutePath() + "' to '"
-            + newIndexDir.getAbsolutePath() + "'.");
-
-    DirSupport.mkdir(newIndexDir.toPath());
-    for (File legacyIndexFile : legacyIndexFiles) {
-      // legacy was just plain Lucene index (so, we move lucene files from here into a SUBDIRECTORY)
-      if (Files.isRegularFile(legacyIndexFile.toPath())) {
-        Files.move(legacyIndexFile.toPath(), new File(newIndexDir, legacyIndexFile.getName()).toPath());
-      }
     }
   }
 
